@@ -83,7 +83,7 @@ SCHEMAS = {
         "sex": (str, {"m", "f"}), "body_fat_pct": ((int, float), None),
         "disciplines": (list, None), "available_days": (list, None),
     }),
-    "objective": (["name", "date", "discipline"], {
+    "objective": (["name", "discipline"], {
         "name": (str, None), "date": (str, None), "discipline": (str, DISCIPLINES),
         "kind": (str, None), "priority": (str, {"A", "B", "C"}),
         "target_weight_kg": ((int, float), None), "target_date": (str, None),

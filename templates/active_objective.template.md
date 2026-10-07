@@ -4,7 +4,6 @@
 {
   "type": "objective",
   "name": "À renseigner",
-  "date": "2027-01-01",
   "discipline": "route",
   "priority": "A"
 }

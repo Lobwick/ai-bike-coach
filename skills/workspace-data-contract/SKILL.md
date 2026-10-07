@@ -33,7 +33,7 @@ erreur nommée. Exceptions : aucune — le profil et l'objectif portent eux auss
 | `decision` | `planning/AAAA-MM-JJ_decision_<slug>.md` | `date`, `trigger`, `outcome` (`proposed`/`applied`/`superseded`/`declined`) | `rule_ids`, `before`, `after`, `session_ref`, `supersedes`, `inputs` |
 | `report` | `rapports/AAAA-MM-JJ_rapport.md` / `_poids.md` | `date`, `period_start`, `period_end` | `report_type`, `load`, `weight` |
 | `athlete_profile` | `planning/Athlete_Profile.md` | — | `ftp_w`, `lthr_bpm`, `hr_max_bpm`, `hr_rest_bpm`, `weight_kg`, `target_weight_kg`, `height_cm`, `birth_year`, `sex`, `body_fat_pct`, `disciplines`, `available_days` |
-| `objective` | `planning/active_objective.md` | `name`, `date`, `discipline` | `kind`, `priority` (`A`/`B`/`C`), `target_weight_kg`, `target_date` |
+| `objective` | `planning/active_objective.md` | `name`, `discipline` (`date` si une épreuve précise ; une saison n'en a pas) | `date`, `kind`, `priority` (`A`/`B`/`C`), `target_weight_kg`, `target_date` |
 
 ### Séance d'une semaine (`sessions[i]`)
 `date` (dans la semaine), `discipline`, `title` obligatoires ; `intensity` (`rest`, `recovery`, `endurance`,
