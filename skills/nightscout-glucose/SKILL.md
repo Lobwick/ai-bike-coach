@@ -23,6 +23,11 @@ Actif seulement si `[glucose].enabled = true`. Sinon : aucune lecture, aucune me
   à un dépôt public ; les fichiers du workspace sont gitignorés.
 - **Mesure absente ≠ normale** : capteur hors service, bruit élevé ou trou de données → « indisponible ».
 
+## Overrides Loop
+Lecture des préréglages et de l'historique d'activation pour analyse et propositions : skill `loop-overrides`. Le profil
+Nightscout contient aussi basales, sensibilité, ratios et jeton d'appareil : n'en extrais que les préréglages
+(`arc_override.py presets`), ne les recopie jamais.
+
 ## Avant une séance — `python3 scripts/arc_glucose.py precheck`
 `get_current_glucose` (valeur + flèche de tendance) → `precheck --mgdl V --direction D --intensity I --duration-s S`.
 Retour : catégorie (`hypo` < 70, `bas` < 90, `limite_basse` < 126, `cible` 126-180, `haute_acceptable` ≤ 250, `haute`),

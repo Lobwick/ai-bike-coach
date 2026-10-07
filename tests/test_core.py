@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import arc_contract  # noqa: E402
 import arc_cycling  # noqa: E402
 import arc_glucose  # noqa: E402
+import arc_override  # noqa: E402
 import arc_guardrails  # noqa: E402
 import arc_ow  # noqa: E402
 import arc_weight  # noqa: E402
@@ -356,6 +357,73 @@ class TestGlucose(unittest.TestCase):
         self.assertEqual(p["average_daily_deficit_kcal"], 0)
         cfg["weight_loss"]["medical_clearance_confirmed"] = True
         self.assertNotIn("blocked", arc_weight.plan(79, 70, 20, cfg))
+
+
+class TestOverride(unittest.TestCase):
+    def profile(self):
+        with open(os.path.join(HERE, "data", "ns_profile.json")) as fh:
+            return json.load(fh)
+
+    def test_presets_expose_nothing_sensitive(self):
+        out = json.dumps(arc_override.presets(self.profile()), ensure_ascii=False)
+        for secret in ("SYNTHETIC-TOKEN", "basal", "sens", "maximumBolus", "deviceToken"):
+            self.assertNotIn(secret, out)
+        self.assertEqual([p["name"] for p in arc_override.presets(self.profile())["presets"]],
+                         ["stop", "sport", "long"])
+
+    def test_activations_merge_duplicates_and_end(self):
+        t = {"result": [
+            {"eventType": "Temporary Override", "reason": "🚴‍♂️ sport", "duration": 0,
+             "timestamp": "2026-10-06T06:26:00Z", "insulinNeedsScaleFactor": 0.41, "correctionRange": [150, 160]},
+            {"eventType": "Temporary Override", "reason": "🚴‍♂️ sport", "duration": 22,
+             "timestamp": "2026-10-06T06:26:30Z", "insulinNeedsScaleFactor": 0.41, "correctionRange": [150, 160]},
+            {"eventType": "Temporary Override", "reason": "❌ stop", "duration": 60,
+             "timestamp": "2026-10-06T07:00:00Z", "insulinNeedsScaleFactor": 0.1}]}
+        acts = arc_override.activations(t)["activations"]
+        self.assertEqual([a["name"] for a in acts], ["sport", "stop"])
+        self.assertTrue(acts[0]["end"].startswith("2026-10-06T06:48"))
+
+    def sess(self, day, hypo=False, start=120, lead_h=0):
+        return {"window": {"start": f"2026-10-0{day}T08:00:00+00:00", "end": f"2026-10-0{day}T10:00:00+00:00"},
+                "glucose_start_mgdl": start, "glucose_min_mgdl": 62 if hypo else 100,
+                "glucose_max_mgdl": 180, "hypo_events": 1 if hypo else 0}
+
+    def acts(self, days, minutes_before=10):
+        return [{"name": "sport", "start": f"2026-10-0{d}T0{7 if minutes_before > 50 else 8}:{'00' if minutes_before > 50 else '00'}:00+00:00".replace("T08:00", "T07:50" if minutes_before == 10 else "T08:00"),
+                 "end": f"2026-10-0{d}T11:00:00+00:00"} for d in days]
+
+    def test_hypo_pattern_gives_bounded_proposal(self):
+        pres = arc_override.presets(self.profile())["presets"]
+        ss = [self.sess(1, True), self.sess(2, True), self.sess(3, False)]
+        acts = self.acts([1, 2, 3])
+        r = arc_override.analyze(ss, acts, pres)
+        p = [x for x in r["proposals"] if x["override"] == "sport"][0]
+        self.assertEqual(p["kind"], "moins_agressif")
+        self.assertEqual(p["status"], "hypothèse")
+        sc = p["proposal"]["insulin_scale"]
+        self.assertAlmostEqual(sc["current"] - sc["candidate"], arc_override.STEP_SCALE, places=2)
+        t = p["proposal"]["target_range_mgdl"]
+        self.assertEqual([b - a for a, b in zip(t["current"], t["candidate"])], [10, 10])
+        self.assertIn("long", r["unused_presets"])
+        self.assertIn("Loop", r["how_to_apply"])
+
+    def test_insufficient_data_gives_no_numbers(self):
+        pres = arc_override.presets(self.profile())["presets"]
+        r = arc_override.analyze([self.sess(1, True), self.sess(2, True)], self.acts([1, 2]), pres)
+        self.assertEqual(r["proposals"][0]["kind"], "insuffisant")
+
+    def test_no_override_hypos_suggest_creating_one(self):
+        pres = arc_override.presets(self.profile())["presets"]
+        ss = [self.sess(d, True, start=80) for d in (1, 2, 3)]
+        r = arc_override.analyze(ss, [], pres)
+        self.assertEqual(r["proposals"][0]["kind"], "creer_ou_utiliser")
+        self.assertIn("copie", r["proposals"][0]["proposal"])
+
+    def test_scale_never_leaves_bounds(self):
+        pres = [{"name": "x", "insulin_scale": 0.05, "target_range_mgdl": [150, 160]}]
+        acts = [{"name": "x", "start": f"2026-10-0{d}T07:00:00+00:00", "end": f"2026-10-0{d}T11:00:00+00:00"} for d in (1, 2, 3)]
+        r = arc_override.analyze([self.sess(d, True) for d in (1, 2, 3)], acts, pres)
+        self.assertGreaterEqual(r["proposals"][0]["proposal"]["insulin_scale"]["candidate"], 0.05)
 
 
 if __name__ == "__main__":

@@ -103,6 +103,10 @@ Lire `config/workspace.toml`, puis `config/workspace.user.toml` (prime, clé par
 Charge le skill `nightscout-glucose` avant toute séance, ravitaillement ou bilan. **Lecture seule** : tu n'appelles
 JAMAIS `log_treatment`, `remove_treatment` ni `update_nightscout_profile`, tu ne proposes AUCUNE dose d'insuline ni
 modification de basale/ratio/override Loop, tu renvoies ces décisions à l'athlète et à son équipe de diabétologie.
+**Overrides Loop** : tu peux les ANALYSER et PROPOSER des hypothèses de réglage ou un nouveau préréglage (skill `loop-overrides`,
+`/override`) ; tu ne crées, ne modifies ni n'actives JAMAIS un override et tu n'écris JAMAIS dans le profil Nightscout (les
+préréglages vivent dans l'app Loop ; l'athlète les applique lui-même après avis de son équipe de diabétologie). Ne recopie jamais
+`deviceToken`, basales, sensibilité ni ratios.
 Avant une séance : `python3 scripts/arc_glucose.py precheck` (valeur + tendance de `get_current_glucose`). Après :
 `arc_glucose.py session` et persiste les clés `glucose_*`, `hypo_events`. Valeur sous 70 mg/dL ou hypoglycémies
 répétées → la séance attend / on consulte. Capteur absent = « indisponible », jamais « normal ». Si `[glucose].enabled`

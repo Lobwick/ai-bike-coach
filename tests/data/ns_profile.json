@@ -1,0 +1,53 @@
+{
+ "result": [
+  {
+   "loopSettings": {
+    "overridePresets": [
+     {
+      "duration": 10800,
+      "insulinNeedsScaleFactor": 0.1,
+      "symbol": "❌",
+      "name": "stop"
+     },
+     {
+      "targetRange": [
+       150,
+       160
+      ],
+      "duration": 0,
+      "symbol": "🚴‍♂️",
+      "insulinNeedsScaleFactor": 0.41,
+      "name": "sport"
+     },
+     {
+      "insulinNeedsScaleFactor": 0.2,
+      "name": "long",
+      "symbol": "🚵‍♂️",
+      "duration": 0,
+      "targetRange": [
+       170,
+       180
+      ]
+     }
+    ],
+    "deviceToken": "SYNTHETIC-TOKEN-DO-NOT-LEAK",
+    "maximumBolus": 17
+   },
+   "store": {
+    "Default": {
+     "basal": [
+      {
+       "value": 0.9,
+       "time": "00:00"
+      }
+     ],
+     "sens": [
+      {
+       "value": 47
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

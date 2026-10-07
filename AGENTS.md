@@ -87,6 +87,7 @@ omise. Valider : `python3 scripts/arc_contract.py --validate <fichier>`.
 | `arc_ow.py` | Dédoublonne séances / sommeil / timeseries Open Wearables. |
 | `arc_cycling.py` | Zones de puissance et FC, charge d'une séance, condition / fatigue / forme. |
 | `arc_glucose.py` | Contrôle glycémique avant séance, analyse pendant/après, bilan du jour (Nightscout). |
+| `arc_override.py` | Analyse des overrides Loop et propositions bornées (lecture seule, rien n'est appliqué). |
 | `arc_weight.py` | Tendance de poids, plan de perte, ravitaillement sur le vélo, énergie disponible, BMR. |
 | `arc_guardrails.py` | Garde-fous R1…R7 avant d'écrire / pousser une semaine. |
 | `arc_workout.py` | Construit le DTO Garmin d'une séance vélo (gabarits route et CX). |
@@ -107,7 +108,7 @@ avertissent, ils ne diagnostiquent pas. Voir `config/workspace.toml`.
 ## Skills (`skills/`)
 
 `workspace-data-contract` · `openwearables-sync` · `garmin-workout-scheduling` · `daily-sync` ·
-`nightscout-glucose` · `coach-setup` · `coach-doctor` · `weather-forecast` · commandes courtes `/today`, `/week`, `/log`.
+`nightscout-glucose` · `loop-overrides` (`/override`) · `coach-setup` · `coach-doctor` · `weather-forecast` · commandes courtes `/today`, `/week`, `/log`.
 
 ## Premier démarrage
 

@@ -80,6 +80,13 @@ class TestRepo(unittest.TestCase):
         for t in ("log_treatment", "remove_treatment", "update_nightscout_profile"):
             self.assertRegex(skill, rf"Interdits, toujours.*{t}", t) if False else self.assertIn(t, skill)
 
+    def test_override_skill_and_agents_never_apply(self):
+        skill = read(os.path.join(ROOT, "skills", "loop-overrides", "SKILL.md"))
+        for needle in ("update_nightscout_profile", "log_treatment", "deviceToken", "équipe de diabétologie"):
+            self.assertIn(needle, skill)
+        for p in glob.glob(os.path.join(ROOT, "agents", "*.md")):
+            self.assertIn("n'écris JAMAIS dans le profil Nightscout", read(p), p)
+
     def test_templates_validate(self):
         for t in ("Athlete_Profile.template.md", "active_objective.template.md"):
             self.assertEqual(arc_contract.validate_file(os.path.join(ROOT, "templates", t)), [], t)
