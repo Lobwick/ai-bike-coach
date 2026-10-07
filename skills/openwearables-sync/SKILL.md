@@ -20,6 +20,23 @@ Open Wearables agrège Garmin, Whoop, Apple Santé, Strava… en lecture seule. 
 | Cycle menstruel (opt-in) | `get_menstrual_cycles` | — | `medical/` |
 Le préfixe d'outil dépend du client (ex. `mcp__claude_ai_Open_wearables_3__…`).
 
+## Rattrapage d'historique (nouvelle installation, ou après un trou)
+Nécessaire pour que la forme, les garde-fous R1/R2/R4 et la base personnelle du bilan matinal existent (42 jours minimum).
+1. `get_workout_events(start, end)` renvoie **100 séances au plus**, les plus récentes d'abord : si `total_workouts` vaut 100,
+   redemande la période d'avant (fenêtres de ~3 mois) jusqu'à couvrir l'historique voulu.
+2. `get_timeseries(types=["power"], resolution="1min")` sur la même période (la puissance n'est PAS dans les séances) ;
+   `get_timeseries` avec `resting_heart_rate`, `heart_rate_variability_rmssd`, `weight`, `body_fat_percentage`,
+   `respiratory_rate`, `oxygen_saturation` (+ `heart_rate` en `1hour`) pour la santé ; `get_sleep_summary` pour le sommeil.
+3. **Les réponses volumineuses sont enregistrées sur disque par l'outil** (message « saved to file ») : passe ce fichier tel quel aux
+   scripts, ne recopie jamais un gros JSON à la main. Une réponse courte reste affichée : dans ce cas, élargis la période pour
+   obtenir un fichier, ou consigne-la compactement et vérifie les totaux (somme des durées = `summary.total_duration_seconds`).
+4. `python3 scripts/arc_sync.py activities --workouts w.json --power p.json --since AAAA-MM-JJ [--dry-run]` puis
+   `python3 scripts/arc_sync.py health --daily d.json --sleep s.json --since AAAA-MM-JJ [--dry-run]`. **Toujours un essai à blanc
+   d'abord** et lis le rapport (séances ignorées et pourquoi, méthode de charge). Les scripts n'écrasent jamais un fichier existant.
+5. Contrôle : `arc_contract.py --validate`, `arc_cycling.py load`, puis `arc_guardrails.py check` sur les semaines planifiées
+   (seule la prochaine semaine est évaluée honnêtement ; les suivantes sont comparées à des semaines pas encore faites).
+6. Vérifie le FTP du profil sur les meilleurs efforts continus (20 et 30 min de la série de puissance) ; propose, ne remplace jamais sans accord.
+
 ## Règles
 1. **Utilisateur** : `[data].ow_user_id` ; vide → `get_users` (un seul utilisateur = lui).
 2. **Fenêtre minimale** : seulement les dates dont le fichier n'existe pas (`activities/`, `medical/`). Quelques jours

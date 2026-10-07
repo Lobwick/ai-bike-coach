@@ -130,7 +130,9 @@ def api_load(root, today=None):
     today = today or dt.date.today()
     cfg = coach_config.load(root)
     st = arc_cycling.current_state(root, today, 365, cfg)
-    out = {"history_days": st["history_days"], "reliable": st["reliable"], "series": st["series"], "projection": [],
+    first_day = next((r["date"] for r in st["series"] if r["load"] > 0), None)      # pas de mois vides avant la 1re séance
+    series = [r for r in st["series"] if first_day and r["date"] >= first_day] or st["series"]
+    out = {"history_days": st["history_days"], "reliable": st["reliable"], "series": series, "projection": [],
            "races": sorted(s["date"] for w in _weeks(root) for s in w["sessions"] if s.get("race")),
            "weekly_planned": [{"week_start": w["week_start"], "planned_load": w["planned_load"]}
                               for w in api_plan(root, today)["weeks"]]}

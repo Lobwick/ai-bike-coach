@@ -89,6 +89,7 @@ omise. Valider : `python3 scripts/arc_contract.py --validate <fichier>`.
 | `arc_cycling.py` | Zones de puissance et FC, charge d'une séance (dont depuis la série de FC), condition / fatigue / forme. |
 | `arc_glucose.py` | Contrôle glycémique avant séance, analyse pendant/après, bilan du jour (Nightscout). |
 | `arc_override.py` | Analyse des overrides Loop et propositions bornées (lecture seule, rien n'est appliqué). |
+| `arc_sync.py` | Rattrapage d'historique Open Wearables → `activities/` (charge depuis la puissance, sinon la FC) et `medical/` (bilans sans verdict). Essai à blanc d'abord. |
 | `arc_weight.py` | Tendance de poids, plan de perte, ravitaillement sur le vélo, énergie disponible, BMR. |
 | `arc_guardrails.py` | Garde-fous R1…R7 avant d'écrire / pousser une semaine. |
 | `arc_workout.py` | Construit le DTO Garmin d'une séance vélo (gabarits route et CX). |
