@@ -410,11 +410,13 @@ def make_handler(reg, token, allowed_hosts):
             self._send(405, json.dumps({"error": "POST uniquement (pas de flux SSE)"}), extra={"Allow": "POST"})
 
         def do_POST(self):  # noqa: N802
-            if self.path.split("?", 1)[0] != "/mcp":
+            path = self.path.split("?", 1)[0]
+            in_path = path[len("/mcp/"):] if path.startswith("/mcp/") else None   # jeton dans l'URL : connecteurs sans en-tête personnalisé
+            if path != "/mcp" and in_path is None:
                 return self._send(404, json.dumps({"error": "Not Found"}))
             if not self._guard():
                 return
-            supplied = self.headers.get("X-Api-Key") or (self.headers.get("Authorization") or "").removeprefix("Bearer ")
+            supplied = in_path or self.headers.get("X-Api-Key") or (self.headers.get("Authorization") or "").removeprefix("Bearer ")
             if not supplied or not hmac.compare_digest(supplied.encode(), tok):
                 return self._send(401, json.dumps({"error": "Unauthorized"}), extra={"WWW-Authenticate": "Bearer"})
             try:

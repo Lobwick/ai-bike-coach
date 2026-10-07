@@ -238,7 +238,7 @@ class TestLiveReloadAndHosting(unittest.TestCase):
         for attr in ('href="/', 'src="/'):
             self.assertNotIn(attr, html)
         js = open(os.path.join(ROOT, "web", "js", "app.js"), encoding="utf-8").read()
-        self.assertIn('fetch(u.replace(/^\\//, ""))', js)
+        self.assertIn('new URL(u.replace(/^\\//, ""), location.origin + location.pathname.replace(/[^/]*$/, ""))', js)
 
 
 if __name__ == "__main__":

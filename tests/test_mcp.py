@@ -174,6 +174,12 @@ class TestSecurity(Base):
         self.assertEqual(self.c.raw("POST", "/api/summary", {})[0], 404)
         self.assertEqual(self.c.raw("DELETE", "/mcp")[0], 405)
 
+    def test_token_in_path(self):
+        msg = {"jsonrpc": "2.0", "id": 1, "method": "ping"}
+        self.assertEqual(self.c.raw("POST", f"/mcp/{TOKEN}", msg)[0], 200)
+        self.assertEqual(self.c.raw("POST", f"/mcp/{TOKEN[:-1]}", msg)[0], 401)
+        self.assertEqual(self.c.raw("POST", "/mcp/", msg)[0], 401)
+
     def test_token_required_and_exact(self):
         for tok in ("none", "", "x" * 40, TOKEN[:-1], TOKEN + "x"):
             self.assertEqual(self.c.rpc("ping", token=tok)[0], 401, tok)

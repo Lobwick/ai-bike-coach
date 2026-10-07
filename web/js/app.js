@@ -19,7 +19,7 @@ function mount(host, content) {
   host.replaceChildren(...doc.body.childNodes);
 }
 
-const api = (u) => fetch(u.replace(/^\//, "")).then((r) => { if (!r.ok) throw new Error(`${u} ${r.status}`); return r.json(); });
+const api = (u) => fetch(new URL(u.replace(/^\//, ""), location.origin + location.pathname.replace(/[^/]*$/, "")).href).then((r) => { if (!r.ok) throw new Error(`${u} ${r.status}`); return r.json(); });
 const cap = (s) => s.replace(/^./, (c) => c.toUpperCase());
 const dash = "—";
 const nz = (v, d = 0) => (v == null ? dash : F.num(v, d));
