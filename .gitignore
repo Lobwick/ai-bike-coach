@@ -53,3 +53,4 @@ logs/
 
 # État local de Serena
 .serena/
+.gstack/
