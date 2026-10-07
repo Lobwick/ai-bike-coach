@@ -138,6 +138,34 @@ class TestProtocol(Base):
         self.assertIn("error", self.c.rpc("prompts/get", {"name": "../etc"})[1])
 
 
+class TestKeepAlive(Base):
+    """Un proxy (Traefik) réutilise les connexions : un refus ne doit jamais corrompre la requête suivante."""
+
+    def test_rejection_does_not_poison_the_next_request_on_the_same_connection(self):
+        body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "ping"})
+        for bad in ({"X-Api-Key": "nope"}, {}, {"X-Api-Key": TOKEN, "Origin": "https://evil.example"}, {"X-Api-Key": TOKEN, "Host": "evil.example"}):
+            c = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+            h = {"Host": f"127.0.0.1:{self.port}", "Content-Type": "application/json"}
+            h.update(bad)
+            c.request("POST", "/mcp", body=body, headers=h)
+            r1 = c.getresponse()
+            r1.read()
+            self.assertIn(r1.status, (401, 403))
+            h2 = {"Host": f"127.0.0.1:{self.port}", "Content-Type": "application/json", "X-Api-Key": TOKEN}
+            c.request("POST", "/mcp", body=body, headers=h2)                       # même objet connexion : http.client rouvre si fermée
+            r2 = c.getresponse()
+            self.assertEqual(r2.status, 200, bad)
+            self.assertEqual(json.loads(r2.read())["result"], {})
+
+    def test_good_requests_can_share_a_connection(self):
+        c = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        h = {"Host": f"127.0.0.1:{self.port}", "Content-Type": "application/json", "X-Api-Key": TOKEN}
+        for i in range(3):
+            c.request("POST", "/mcp", body=json.dumps({"jsonrpc": "2.0", "id": i, "method": "ping"}), headers=h)
+            r = c.getresponse()
+            self.assertEqual((r.status, json.loads(r.read())["id"]), (200, i))
+
+
 class TestSecurity(Base):
     def test_health_open_get_mcp_refused(self):
         self.assertEqual(self.c.raw("GET", "/health")[0], 200)
@@ -159,7 +187,11 @@ class TestSecurity(Base):
 
     def test_size_limits(self):
         big = b'{"jsonrpc":"2.0","id":1,"method":"ping","params":{"x":"' + b"a" * (arc_mcp.MAX_BODY + 10) + b'"}}'
-        self.assertEqual(self.c.raw("POST", "/mcp", big, {"X-Api-Key": TOKEN})[0], 413)
+        try:
+            status = self.c.raw("POST", "/mcp", big, {"X-Api-Key": TOKEN})[0]
+        except (BrokenPipeError, ConnectionResetError):          # le serveur coupe sans lire un corps démesuré : refus tout aussi valable
+            status = 413
+        self.assertEqual(status, 413)
         self.assertEqual(self.c.raw("POST", "/mcp", b"", {"X-Api-Key": TOKEN})[0], 400)
 
     def test_refuses_to_start_without_a_real_token(self):

@@ -76,8 +76,11 @@ class TestDeployBundle(unittest.TestCase):
     def test_migration_is_dry_run_by_default_and_never_deletes(self):
         s = rd(D, "migrate-from-mac.sh")
         code = "\n".join(l for l in s.splitlines() if not l.lstrip().startswith("#"))
-        self.assertIn("--dry-run", code)
-        self.assertIn("--yes", code)
+        self.assertIn("--skip-old-files", code)                  # jamais d'écrasement côté Freebox
+        self.assertIn('"${1:-}" = "--yes"', code)                # aucune copie sans --yes (simulation par défaut)
+        self.assertEqual(code.count("ssh "), code.count("ssh \"") + code.count("ssh $"))   # ssh n'est appelé que dans les branches prévues
+        copy_line = [l for l in code.splitlines() if "--skip-old-files" in l][0]
+        self.assertTrue(copy_line.startswith("  "), "la copie est dans la branche --yes")
         self.assertNotRegex(code, r"--delete")
         self.assertNotRegex(code, r"\brm\s+-")
 

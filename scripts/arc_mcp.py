@@ -382,6 +382,11 @@ def make_handler(reg, token, allowed_hosts):
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
+            if code >= 400:
+                # Refus avant lecture du corps : on FERME la connexion, sinon le corps non lu serait pris pour la requête suivante
+                # par un proxy qui réutilise la connexion (réponse 501 erronée constatée derrière Traefik).
+                self.close_connection = True
+                self.send_header("Connection", "close")
             for k, v in (extra or {}).items():
                 self.send_header(k, v)
             self.end_headers()
