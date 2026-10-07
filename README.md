@@ -25,8 +25,11 @@ Prérequis : Python ≥ 3.9 (aucune dépendance), un connecteur **Open Wearables
 ```bash
 ./scripts/dashboard.sh        # http://127.0.0.1:8765/ — lecture seule, local, aucune dépendance
 ```
-Forme et charge, plan de la semaine, calendrier des courses UFOLEP, séances, santé et glycémie **déjà enregistrées** dans tes fichiers.
-N'écoute que sur `127.0.0.1`, n'interroge ni Open Wearables, ni Nightscout, ni Garmin, n'écrit rien.
+Même identité visuelle que le tableau de bord d'origine (compte à rebours de la prochaine course, navigation latérale, thème clair/sombre).
+Vues : Aujourd'hui, Forme & charge, Santé, Semaine, Séances, Calendrier, Décisions, Poids. Elles affichent ce que les agents ont **déjà
+enregistré** dans tes fichiers (séances, bilans, glycémie, plan). N'écoute que sur `127.0.0.1`, n'interroge ni Open Wearables, ni
+Nightscout, ni Garmin, n'écrit rien. Seule requête externe : les polices Sora/Inter (Google Fonts, adresse IP visible de Google) ;
+`[dashboard].web_fonts = false` les désactive.
 
 ## Commandes
 

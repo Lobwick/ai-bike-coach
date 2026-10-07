@@ -135,6 +135,9 @@ medical_clearance_confirmed = false
 # Tableau de bord local (`scripts/dashboard.sh`) : lecture seule, n'écoute que sur 127.0.0.1
 # (adresse non configurable). Si le port est pris, les 9 suivants sont essayés.
 port = 8765
+# Polices Sora / Inter (identité du tableau de bord d'origine) chargées depuis Google Fonts : SEULE ressource externe,
+# elle ne révèle que ton adresse IP et ton navigateur à Google. `false` = polices du système, aucune requête externe.
+web_fonts = true
 
 [sync]
 # Synchronisation automatique headless (scripts/daily-sync.sh, `claude -p /daily-sync`).

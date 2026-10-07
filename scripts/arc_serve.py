@@ -5,8 +5,9 @@
 
 - Écoute UNIQUEMENT sur 127.0.0.1 (l'adresse n'est pas configurable) ; si le port est pris, les 9 suivants sont essayés.
 - GET seulement ; l'en-tête Host doit être localhost / 127.0.0.1 (protection contre le « DNS rebinding »).
-- CSP stricte : aucun script ni style inline, aucune ressource externe ; la page affiche les données avec
-  `textContent` uniquement (un fichier Markdown ne peut pas injecter de HTML).
+- CSP stricte : aucun script ni style inline. SEULE ressource externe, comme dans le tableau de bord d'origine :
+  les polices Sora/Inter de Google Fonts, désactivables par `[dashboard].web_fonts = false` (repli sur les polices du
+  système). Le texte venant des fichiers est échappé par défaut avant d'entrer dans le DOM (`h` dans `web/js/app.js`).
 - Ne lit que les fichiers du workspace déjà persistés ; n'interroge ni Open Wearables, ni Nightscout, ni Garmin,
   et n'écrit rien. La glycémie affichée est celle que les agents ont déjà écrite dans les fichiers.
 """
@@ -28,11 +29,21 @@ import coach_config  # noqa: E402
 ROOT = coach_config.ROOT
 WEB = os.path.join(ROOT, "web")
 STATIC = {"/": ("index.html", "text/html; charset=utf-8"),
-          "/app.js": ("app.js", "text/javascript; charset=utf-8"),
-          "/app.css": ("app.css", "text/css; charset=utf-8"),
+          "/css/app.css": ("css/app.css", "text/css; charset=utf-8"),
+          "/js/app.js": ("js/app.js", "text/javascript; charset=utf-8"),
+          "/js/chart.js": ("js/chart.js", "text/javascript; charset=utf-8"),
+          "/js/format.js": ("js/format.js", "text/javascript; charset=utf-8"),
+          "/js/nav.js": ("js/nav.js", "text/javascript; charset=utf-8"),
           "/favicon.svg": ("favicon.svg", "image/svg+xml")}
-CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
-       "img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+FONTS_CSS = ('@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700'
+             '&family=Sora:wght@600;700&display=swap");\n')
+
+
+def csp(web_fonts):
+    style = "style-src 'self' https://fonts.googleapis.com" if web_fonts else "style-src 'self'"
+    font = "font-src https://fonts.gstatic.com; " if web_fonts else ""
+    return ("default-src 'none'; script-src 'self'; " + style + "; " + font + "connect-src 'self'; "
+            "img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 
 
 def _arc_files(root, sub, pattern="*.md"):
@@ -74,6 +85,7 @@ def api_summary(root, today=None):
     obj = next((o for _, o in _arc_files(root, "planning", "active_objective.md")), {})
     out = {"today": today.isoformat(), "objective": obj.get("name"),
            "disciplines": coach_config.get(cfg, "sport.disciplines", []),
+           "units": coach_config.get(cfg, "athlete.units", "metric"),
            "profile": {k: prof[k] for k in ("ftp_w", "hr_rest_bpm", "hr_max_bpm", "lthr_bpm", "weight_kg", "sex")
                        if k in prof},
            "load": {"history_days": st["history_days"], "reliable": st["reliable"], "state": st["state"],
@@ -114,8 +126,9 @@ def api_plan(root, today=None):
 def api_load(root, today=None):
     today = today or dt.date.today()
     cfg = coach_config.load(root)
-    st = arc_cycling.current_state(root, today, 120, cfg)
+    st = arc_cycling.current_state(root, today, 365, cfg)
     out = {"history_days": st["history_days"], "reliable": st["reliable"], "series": st["series"], "projection": [],
+           "races": sorted(s["date"] for w in _weeks(root) for s in w["sessions"] if s.get("race")),
            "weekly_planned": [{"week_start": w["week_start"], "planned_load": w["planned_load"]}
                               for w in api_plan(root, today)["weeks"]]}
     if st["reliable"]:
@@ -176,11 +189,100 @@ def api_calendar(root, today=None):
     return {"races": [r for r in rows if not r["past"]]}
 
 
-ROUTES = {"/api/summary": api_summary, "/api/plan": api_plan, "/api/load": api_load,
+def _mean_sd(vals):
+    m = sum(vals) / len(vals)
+    return m, (sum((v - m) ** 2 for v in vals) / len(vals)) ** 0.5
+
+
+METRICS = (("hrv_rmssd_ms", "HRV nocturne", "ms", 0), ("resting_hr_bpm", "FC de repos", "bpm", 0),
+           ("sleep_min", "Sommeil", "min", 0), ("respiratory_rate_brpm", "Fréquence respiratoire", "/min", 1),
+           ("spo2_pct", "SpO₂", "%", 1))
+
+
+def api_today(root, today=None):
+    """Bilan du jour : chaque mesure est comparée à la base PERSONNELLE (28 j précédents, ≥ 7 valeurs), jamais à une norme."""
+    today = today or dt.date.today()
+    iso = today.isoformat()
+    health = sorted(_health(root), key=lambda h: h["date"])
+    metrics = []
+    for key, label, unit, digits in METRICS:
+        pts = [(h["date"], h[key]) for h in health if key in h and h["date"] <= iso]
+        if not pts:
+            metrics.append({"key": key, "label": label, "unit": unit, "value": None})
+            continue
+        d, v = pts[-1]
+        stale = (today - dt.date.fromisoformat(d)).days
+        if stale > 3:
+            metrics.append({"key": key, "label": label, "unit": unit, "value": None, "last": {"date": d, "value": v}})
+            continue
+        base = [x for dd, x in pts if dd < d][-28:]
+        m = {"key": key, "label": label, "unit": unit, "digits": digits, "value": v, "date": d}
+        if len(base) >= 7:
+            mean, sd = _mean_sd(base)
+            m["baseline"] = {"mean": round(mean, 1), "low": round(mean - sd, 1), "high": round(mean + sd, 1), "n": len(base)}
+        metrics.append(m)
+    ver = next((h for h in reversed(health) if h.get("verdict") and h["date"] <= iso), None)
+    weeks = _weeks(root)
+    sessions = sorted((s for w in weeks for s in w["sessions"]), key=lambda s: s["date"])
+    cfg = coach_config.load(root)
+    st = arc_cycling.current_state(root, today, 30, cfg)
+    gl_day = next((h for h in reversed(health) if "tir_pct" in h), None)
+    gl_act = next((a for a in sorted((o for _, o in _arc_files(root, "activities") if o.get("type") == "activity"),
+                                     key=lambda a: a["date"], reverse=True) if "glucose_start_mgdl" in a), None)
+    return {"date": iso, "metrics": metrics,
+            "verdict": ({"value": ver["verdict"], "reason": ver.get("verdict_reason"), "date": ver["date"],
+                         "is_today": ver["date"] == iso} if ver else None),
+            "today_sessions": [s for s in sessions if s["date"] == iso],
+            "upcoming": [s for s in sessions if s["date"] > iso][:4],
+            "load": {"history_days": st["history_days"], "reliable": st["reliable"], "state": st["state"],
+                     "ramp_per_week": st["ramp_per_week"]},
+            "glucose": {"enabled": bool(coach_config.get(cfg, "glucose.enabled", False)),
+                        "day": ({k: gl_day[k] for k in ("date", "tir_pct", "time_below_pct", "glucose_avg_mgdl",
+                                                          "lows_below_54", "nocturnal_low") if k in gl_day} if gl_day else None),
+                        "last_session": ({k: gl_act[k] for k in ("date", "glucose_start_mgdl", "glucose_min_mgdl",
+                                                                   "glucose_max_mgdl", "hypo_events") if k in gl_act}
+                                         if gl_act else None)}}
+
+
+def api_decisions(root):
+    rows = []
+    for path, o in _arc_files(root, "planning", "*_decision_*.md"):
+        if o.get("type") != "decision":
+            continue
+        try:
+            with open(os.path.join(root, path), encoding="utf-8") as fh:
+                title = fh.readline().lstrip("# ").strip()
+        except OSError:
+            title = path
+        rows.append({"date": o["date"], "title": title, "trigger": o.get("trigger"), "outcome": o.get("outcome"),
+                     "rule_ids": o.get("rule_ids"), "before": o.get("before"), "after": o.get("after"), "file": path})
+    return {"decisions": sorted(rows, key=lambda r: r["date"], reverse=True)}
+
+
+def api_weight(root, today=None):
+    import arc_weight
+    cfg = coach_config.load(root)
+    prof = _profile(root, cfg)
+    pts = [{"date": h["date"], "weight_kg": h["weight_kg"]} for h in sorted(_health(root), key=lambda h: h["date"])
+           if h.get("weight_kg")]
+    if prof.get("weight_kg") and not pts:
+        pass  # le poids du profil n'est pas une pesée : on ne l'ajoute pas à la courbe
+    out = {"points": pts, "target_kg": prof.get("target_weight_kg"), "profile_kg": prof.get("weight_kg"),
+           "locked": bool(coach_config.get(cfg, "weight_loss.medical_clearance_required", False)
+                          and not coach_config.get(cfg, "weight_loss.medical_clearance_confirmed", False))}
+    if pts:
+        out["trend"] = arc_weight.weight_trend(pts)
+    return out
+
+
+ROUTES = {"/api/today": api_today, "/api/decisions": api_decisions, "/api/weight": api_weight, "/api/summary": api_summary, "/api/plan": api_plan, "/api/load": api_load,
           "/api/activities": api_activities, "/api/health": api_health, "/api/calendar": api_calendar}
 
 
 def make_handler(root):
+    web_fonts = bool(coach_config.get(coach_config.load(root), "dashboard.web_fonts", True))
+    policy = csp(web_fonts)
+
     class H(http.server.BaseHTTPRequestHandler):
         server_version = "arc-serve"
 
@@ -192,7 +294,7 @@ def make_handler(root):
             self.send_response(code)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(data)))
-            self.send_header("Content-Security-Policy", CSP)
+            self.send_header("Content-Security-Policy", policy)
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
             self.send_header("Cache-Control", "no-store")
@@ -207,6 +309,8 @@ def make_handler(root):
             if not self._host_ok():
                 return self._send(403, "hôte refusé", "text/plain; charset=utf-8")
             path = self.path.split("?", 1)[0]
+            if path == "/fonts.css":
+                return self._send(200, FONTS_CSS if web_fonts else "/* polices du système */\n", "text/css; charset=utf-8")
             if path in STATIC:
                 name, ctype = STATIC[path]
                 try:

@@ -1,57 +1,29 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Coach vélo — tableau de bord</title>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/app.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Tableau de bord — ai-bike-coach</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/fonts.css">
+  <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<header class="top">
-  <div>
-    <h1>Coach vélo</h1>
-    <p id="objective" class="muted">Chargement…</p>
+  <a class="skip" href="#main">Aller au contenu</a>
+  <header class="top">
+    <a class="brand" href="#/"><svg class="brand__mark" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="15.5" r="3.4"/><circle cx="17.5" cy="15.5" r="3.4"/><path d="M6.5 15.5 10 8h4.2M10 8l3.2 7.5h4.3M14.2 8l3.3 7.5"/></g></svg><span>ai-bike-coach</span></a>
+    <div class="objective" id="objective" aria-live="polite"></div>
+    <button class="icon-btn" id="theme" type="button" aria-label="Basculer le thème clair / sombre">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z"/></svg>
+    </button>
+  </header>
+  <div class="shell">
+    <nav class="nav" id="nav" aria-label="Sections"></nav>
+    <main class="main" id="main" tabindex="-1" aria-live="polite">
+      <div class="loading" aria-hidden="true"><div class="skeleton skeleton--title"></div><div class="skeleton"></div><div class="skeleton skeleton--block"></div></div>
+    </main>
   </div>
-  <p class="muted small" id="asof"></p>
-</header>
-<main>
-  <section id="kpis" class="kpis" aria-label="Indicateurs"></section>
-  <section id="alerts" aria-label="Alertes"></section>
-
-  <section class="card" id="next-race-card">
-    <h2>Prochaine course</h2>
-    <div id="next-race"></div>
-  </section>
-
-  <section class="card">
-    <h2 id="load-title">Condition, fatigue et forme</h2>
-    <p class="muted small" id="load-note"></p>
-    <div id="load-chart" class="chart" role="img" aria-label="Courbes de condition, fatigue et forme"></div>
-    <div class="legend" id="load-legend"></div>
-  </section>
-
-  <section class="card">
-    <h2>Plan</h2>
-    <div id="plan"></div>
-  </section>
-
-  <section class="card">
-    <h2>Calendrier des courses UFOLEP</h2>
-    <div id="calendar"></div>
-  </section>
-
-  <section class="card">
-    <h2>Séances récentes</h2>
-    <div id="activities"></div>
-  </section>
-
-  <section class="card">
-    <h2>Santé et glycémie</h2>
-    <div id="health"></div>
-  </section>
-</main>
-<footer class="muted small">Lecture seule · données de ton espace de travail · rien n'est envoyé sur Internet · <span id="foot"></span></footer>
-<script src="/app.js"></script>
+  <script type="module" src="/js/app.js"></script>
 </body>
 </html>

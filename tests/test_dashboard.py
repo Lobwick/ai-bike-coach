@@ -107,16 +107,40 @@ class TestHttp(unittest.TestCase):
     def test_page_and_csp(self):
         st, h, b = self.req("GET", "/")
         self.assertEqual(st, 200)
-        self.assertIn(b"Coach", b)
+        self.assertIn(b"ai-bike-coach", b)
         self.assertIn("default-src 'none'", h["Content-Security-Policy"])
         self.assertNotIn("unsafe-inline", h["Content-Security-Policy"])
+        self.assertNotIn("unsafe-eval", h["Content-Security-Policy"])
         self.assertEqual(h["X-Content-Type-Options"], "nosniff")
+
+    def test_all_static_files_are_served_with_right_types(self):
+        for path, ctype in (("/css/app.css", "text/css"), ("/js/app.js", "text/javascript"), ("/js/chart.js", "text/javascript"),
+                            ("/js/format.js", "text/javascript"), ("/js/nav.js", "text/javascript"), ("/favicon.svg", "image/svg+xml")):
+            st, h, b = self.req("GET", path)
+            self.assertEqual(st, 200, path)
+            self.assertIn(ctype, h["Content-Type"], path)
+            self.assertTrue(b, path)
+
+    def test_every_module_import_resolves_to_a_served_file(self):
+        import re
+        for name in ("app.js", "chart.js", "format.js", "nav.js"):
+            src = open(os.path.join(ROOT, "web", "js", name), encoding="utf-8").read()
+            for rel in re.findall(r'from "\./([a-z]+\.js)"', src):
+                self.assertEqual(self.req("GET", f"/js/{rel}")[0], 200, f"{name} -> {rel}")
+
+    def test_fonts_are_the_only_external_resource_and_switchable(self):
+        _, h, b = self.req("GET", "/fonts.css")
+        self.assertIn(b"fonts.googleapis.com", b)
+        self.assertIn("https://fonts.googleapis.com", h["Content-Security-Policy"])
+        self.assertIn("font-src https://fonts.gstatic.com", h["Content-Security-Policy"])
+        self.assertEqual(arc_serve.csp(False).count("http"), 0)
+
 
     def test_no_inline_script_or_external_resource_in_page(self):
         _, _, b = self.req("GET", "/")
         html = b.decode()
         self.assertNotIn("http://", html.replace("http://www.w3.org", ""))
-        self.assertNotIn("https://", html)
+        self.assertNotIn("https://", html)           # les polices passent par /fonts.css, jamais par la page
         self.assertNotRegex(html, r"<script(?![^>]*\ssrc=)")
         self.assertNotIn(" style=", html)
 
@@ -138,10 +162,18 @@ class TestHttp(unittest.TestCase):
         for p in ("/../config/workspace.toml", "/%2e%2e/AGENTS.md", "/planning/Athlete_Profile.md", "/app.js/../../AGENTS.md"):
             self.assertEqual(self.req("GET", p)[0], 404, p)
 
-    def test_js_never_uses_innerhtml(self):
-        js = open(os.path.join(ROOT, "web", "app.js"), encoding="utf-8").read()
-        for bad in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("):
-            self.assertNotIn(bad, js)
+    def test_js_never_writes_raw_html(self):
+        import re
+        for name in ("app.js", "chart.js", "format.js", "nav.js"):
+            with open(os.path.join(ROOT, "web", "js", name), encoding="utf-8") as fh:
+                code = re.sub(r"//[^\n]*|/\*.*?\*/", "", fh.read(), flags=re.S)
+            for bad in (r"\.innerHTML", r"\.outerHTML", r"insertAdjacentHTML", r"document\.write", r"\beval\(", r"new Function"):
+                self.assertIsNone(re.search(bad, code), f"{name}: {bad}")
+
+    def test_template_escapes_by_default(self):
+        js = open(os.path.join(ROOT, "web", "js", "app.js"), encoding="utf-8").read()
+        self.assertIn("const str = (v) => (v instanceof Raw ? v.s", js)
+        self.assertIn("F.esc(v)", js)
 
 
 if __name__ == "__main__":
