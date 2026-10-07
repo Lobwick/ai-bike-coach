@@ -34,6 +34,11 @@ SCHEMAS = {
         "fluid_intake_ml": ((int, float), None), "weight_pre_kg": ((int, float), None),
         "weight_post_kg": ((int, float), None), "ow_ids": (list, None),
         "sources": (list, None), "gear_ids": (list, None), "race": (bool, None),
+        "glucose_start_mgdl": ((int, float), None), "glucose_min_mgdl": ((int, float), None),
+        "glucose_max_mgdl": ((int, float), None), "glucose_end_mgdl": ((int, float), None),
+        "glucose_post_min_mgdl": ((int, float), None), "hypo_events": (int, None),
+        "carbs_logged_g": ((int, float), None), "carbs_before_g": ((int, float), None),
+        "loop_override": (str, None),
     }),
     "health": (["date"], {
         "date": (str, None), "resting_hr_bpm": ((int, float), None),
@@ -42,6 +47,10 @@ SCHEMAS = {
         "pain": (list, None), "weight_kg": ((int, float), None),
         "body_fat_pct": ((int, float), None), "cycle_phase": (str, None),
         "cycle_day": ((int, float), None),
+        "glucose_avg_mgdl": ((int, float), None), "tir_pct": ((int, float), None),
+        "time_below_pct": ((int, float), None), "time_above_pct": ((int, float), None),
+        "glucose_cv_pct": ((int, float), None), "lows_below_54": (int, None),
+        "nocturnal_low": (bool, None),
     }),
     "nutrition": (["date"], {
         "date": (str, None), "intake_kcal": ((int, float), None),
@@ -104,7 +113,8 @@ def _check_fields(obj, spec, where, errs):
             if isinstance(v, str) and not DATE.match(v):
                 errs.append(f"{where}{key} : date AAAA-MM-JJ attendue")
         if isinstance(v, (int, float)) and not isinstance(v, bool) and v == 0 \
-                and key not in ("fluid_intake_ml", "deficit_kcal", "carbs_g"):
+                and key not in ("fluid_intake_ml", "deficit_kcal", "carbs_g", "hypo_events",
+                                    "time_below_pct", "time_above_pct", "lows_below_54"):
             errs.append(f"{where}{key} : 0 interdit — mesure absente = clé omise")
 
 

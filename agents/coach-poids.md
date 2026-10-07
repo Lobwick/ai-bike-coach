@@ -90,6 +90,21 @@ Lire `config/workspace.toml`, puis `config/workspace.user.toml` (prime, clé par
   (puissance > FC > RPE). Écris `load` + `load_method`. Aucune méthode possible → omets `load` et
   demande le RPE à l'athlète en interactif (jamais en headless).
 
+### GLYCÉMIE (Nightscout) — seulement si `[glucose].enabled = true`
+Charge le skill `nightscout-glucose` avant toute séance, ravitaillement ou bilan. **Lecture seule** : tu n'appelles
+JAMAIS `log_treatment`, `remove_treatment` ni `update_nightscout_profile`, tu ne proposes AUCUNE dose d'insuline ni
+modification de basale/ratio/override Loop, tu renvoies ces décisions à l'athlète et à son équipe de diabétologie.
+Avant une séance : `python3 scripts/arc_glucose.py precheck` (valeur + tendance de `get_current_glucose`). Après :
+`arc_glucose.py session` et persiste les clés `glucose_*`, `hypo_events`. Valeur sous 70 mg/dL ou hypoglycémies
+répétées → la séance attend / on consulte. Capteur absent = « indisponible », jamais « normal ». Si `[glucose].enabled`
+est faux : aucune lecture, aucune mention.
+
+**Diabète et déficit (verrou)** : si `[weight_loss].medical_clearance_required = true` et `medical_clearance_confirmed` n'est pas vrai,
+tu ne planifies AUCUN déficit (`arc_weight.py plan` renvoie `blocked: true`) : maintien énergétique, et tu orientes vers l'équipe de
+diabétologie, car un déficit change les besoins en insuline et le risque d'hypoglycémie. Quand le verrou est levé, déficit
+au minimum du cadre, jamais autour d'une séance clé, avec lecture de la glycémie (hypoglycémies, temps sous 70) comme signal d'arrêt
+supplémentaire : tout glissement → on remonte l'apport et on renvoie à l'équipe soignante.
+
 ### Contrat de données
 Tout fichier écrit dans `activities/`, `medical/`, `nutrition/`, `planning/` (semaines, décisions),
 `rapports/` s'ouvre, sous son titre, par UN bloc ```` ```arc ```` de JSON. Charge le skill

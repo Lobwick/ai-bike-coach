@@ -65,6 +65,24 @@ morning_check = "full"
 # Contexte du cycle menstruel — OPT-IN STRICT. "off" | "ow" (get_menstrual_cycles) | "manual".
 cycle_tracking = "off"
 
+[glucose]
+# Glycémie (CGM) via le MCP Nightscout — LECTURE SEULE, opt-in. Pour un athlète diabétique
+# (type 1 sous boucle fermée, etc.) : séances, ravitaillement et bilan tiennent compte de la glycémie.
+# Les outils d'ÉCRITURE du serveur (log_treatment, remove_treatment, update_nightscout_profile)
+# ne sont JAMAIS appelés. Aucune dose d'insuline, aucune modification de basale ou d'override :
+# décision de l'athlète et de son équipe de diabétologie.
+enabled = false
+source = "nightscout"
+# Plage cible (mg/dL) pour le temps dans la cible, et seuils de départ avant une séance
+# (repères de consensus, approximations du projet — Riddell et al. 2017).
+low_mgdl = 70
+high_mgdl = 180
+stop_below_mgdl = 70
+start_low_mgdl = 90
+start_target_low_mgdl = 126
+start_target_high_mgdl = 180
+start_high_mgdl = 250
+
 [load]
 # Modèle de charge d'entraînement (scripts/arc_cycling.py). Constantes de temps en jours.
 condition_days = 42
@@ -103,6 +121,12 @@ default_deficit_kcal = 400
 energy_availability_floor = 30
 # Protéines (g/kg/j) pendant un déficit avec entraînement.
 protein_g_per_kg = 1.8
+# Perte de poids sous condition médicale (ex. diabète sous insuline) : un déficit modifie les besoins
+# en insuline et le risque d'hypoglycémie. Si `medical_clearance_required` est vrai, AUCUN déficit
+# n'est planifié (déficit = 0, maintien) tant que `medical_clearance_confirmed` n'est pas passé à vrai
+# par l'athlète, après l'accord de son médecin.
+medical_clearance_required = false
+medical_clearance_confirmed = false
 
 [sync]
 # Synchronisation automatique headless (scripts/daily-sync.sh, `claude -p /daily-sync`).

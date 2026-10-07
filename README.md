@@ -4,6 +4,7 @@ Coaching IA **vélo de route**, **cyclo-cross** et **perte de poids**, dans un e
 Markdown. Dérivé de [`mmornati/ai-running-coach`](https://github.com/mmornati/ai-running-coach).
 
 - 🔎 **Lit** tes données via le MCP **Open Wearables** (Garmin, Whoop, Apple Santé, Strava… agrégés).
+- 🩸 **Glycémie** (optionnel) : lecture seule via **Nightscout** — contrôle avant séance, analyse pendant/après, hypoglycémies tardives ; jamais de dose ni d'écriture.
 - 📤 **Pousse** tes entraînements sur **Garmin Connect** — seul rôle de Garmin ici.
 - 🤖 5 agents : `coach-route`, `coach-cx`, `coach-poids`, `medical`, `nutritionist`.
 - 🛡 Garde-fous déterministes (rampe de charge, jours durs, perte de poids trop rapide, déficit un jour clé).

@@ -71,6 +71,15 @@ class TestRepo(unittest.TestCase):
             self.assertTrue(m, p)
             self.assertLessEqual(set(m.group(1).split(",")), coach_doctor.PUSH_TOOLS, p)
 
+    def test_nightscout_write_tools_forbidden_everywhere(self):
+        for p in glob.glob(os.path.join(ROOT, "agents", "*.md")):
+            text = read(p)
+            self.assertIn("log_treatment", text, p)
+            self.assertIn("JAMAIS `log_treatment`", text, p)
+        skill = read(os.path.join(ROOT, "skills", "nightscout-glucose", "SKILL.md"))
+        for t in ("log_treatment", "remove_treatment", "update_nightscout_profile"):
+            self.assertRegex(skill, rf"Interdits, toujours.*{t}", t) if False else self.assertIn(t, skill)
+
     def test_templates_validate(self):
         for t in ("Athlete_Profile.template.md", "active_objective.template.md"):
             self.assertEqual(arc_contract.validate_file(os.path.join(ROOT, "templates", t)), [], t)

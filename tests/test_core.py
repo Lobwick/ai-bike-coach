@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
 import arc_contract  # noqa: E402
 import arc_cycling  # noqa: E402
+import arc_glucose  # noqa: E402
 import arc_guardrails  # noqa: E402
 import arc_ow  # noqa: E402
 import arc_weight  # noqa: E402
@@ -45,6 +46,12 @@ def workspace(profile=None, activities=(), health=()):
         with open(os.path.join(d, "medical", f"{h['date']}_health.md"), "w") as fh:
             fh.write(block(dict({"type": "health"}, **h)))
     return d
+
+
+def shared_cfg():
+    """Config versionnée seule : les tests ne dépendent jamais de workspace.user.toml."""
+    with open(os.path.join(ROOT, "config", "workspace.toml"), encoding="utf-8") as fh:
+        return coach_config.parse_toml(fh.read())
 
 
 class TestConfig(unittest.TestCase):
@@ -229,7 +236,7 @@ class TestGuardrails(unittest.TestCase):
 
 class TestWeight(unittest.TestCase):
     def test_plan_flags_too_fast(self):
-        cfg = coach_config.load(ROOT)
+        cfg = shared_cfg()
         p = arc_weight.plan(80, 70, 6, cfg)
         self.assertFalse(p["within_guardrail"])
         self.assertIn("suggestion", p)
@@ -281,6 +288,74 @@ class TestWorkout(unittest.TestCase):
         with self.assertRaises(ValueError):
             arc_workout.build({"name": "x", "steps": [
                 {"kind": "interval", "duration_s": 60, "power_w": [300, 200]}]})
+
+
+class TestGlucose(unittest.TestCase):
+    def entries(self, vals, start="2026-10-06T06:00:00Z", step=5):
+        t0 = arc_glucose._dt(start)
+        return {"result": [{"glucose_mgdl": v, "direction": "Flat",
+                            "timestamp": (t0 + dt.timedelta(minutes=step * i)).isoformat()}
+                           for i, v in enumerate(vals)]}
+
+    def test_precheck_categories(self):
+        cat = lambda v, d=None: arc_glucose.precheck(v, d)["category"]  # noqa: E731
+        self.assertEqual(cat(60), "hypo")
+        self.assertEqual(cat(85), "bas")
+        self.assertEqual(cat(104), "limite_basse")
+        self.assertEqual(cat(150), "cible")
+        self.assertEqual(cat(220), "haute_acceptable")
+        self.assertEqual(cat(300), "haute")
+
+    def test_precheck_never_doses(self):
+        r = arc_glucose.precheck(104, "Flat")
+        self.assertIn("Aucune dose", " ".join(r["reminders"]))
+        self.assertIn("pas un avis médical", r["disclaimer"])
+
+    def test_falling_trend_adds_carbs(self):
+        self.assertIn("descendante", arc_glucose.precheck(140, "SingleDown")["message"])
+
+    def test_session_detects_hypo_after(self):
+        # 06:00-06:30 séance ; glycémie 110 → 95 → 68 après
+        doc = self.entries([110, 108, 105, 100, 98, 95, 92, 90, 80, 68, 72, 80])
+        res = arc_glucose.session(doc, "2026-10-06T06:00:00Z", "2026-10-06T06:30:00Z")
+        self.assertEqual(res["glucose_start_mgdl"], 110)
+        self.assertEqual(res["hypo_events"], 1)
+        self.assertEqual(res["glucose_post_min_mgdl"], 68)
+        self.assertTrue(any("hypoglycémies tardives" in f for f in res["flags"]))
+
+    def test_session_treatments_carbs_and_override(self):
+        doc = self.entries([100] * 12)
+        tr = {"result": [
+            {"eventType": "Carb Correction", "carbs": 15, "timestamp": "2026-10-06T06:10:00Z"},
+            {"eventType": "Temporary Override", "reason": "sport", "duration": 60,
+             "insulinNeedsScaleFactor": 0.41, "timestamp": "2026-10-06T05:50:00Z"}]}
+        res = arc_glucose.session(doc, "2026-10-06T06:00:00Z", "2026-10-06T06:30:00Z", tr)
+        self.assertEqual(res["carbs_logged_g"], 15)
+        self.assertEqual(res["overrides"][0]["reason"], "sport")
+        self.assertEqual(res["hypo_events"], 0)
+
+    def test_missing_data_is_error_not_normal(self):
+        self.assertIn("error", arc_glucose.day({"result": []}))
+        self.assertIn("error", arc_glucose.session({"result": []}, "2026-10-06T06:00:00Z", "2026-10-06T06:30:00Z"))
+
+    def test_day_stats(self):
+        r = arc_glucose.day(self.entries([60, 100, 120, 200] * 40))
+        self.assertEqual(r["tir_pct"], 50)
+        self.assertEqual(r["time_below_pct"], 25.0)
+
+    def test_contract_accepts_glucose_keys_and_zero_hypo(self):
+        self.assertEqual(arc_contract.validate_obj(
+            {"type": "activity", "date": "2026-10-05", "discipline": "route", "duration_s": 3600,
+             "glucose_start_mgdl": 110, "hypo_events": 0}), [])
+
+    def test_weight_plan_blocked_without_clearance(self):
+        cfg = {"weight_loss": {"medical_clearance_required": True, "medical_clearance_confirmed": False},
+               "guardrails": {}}
+        p = arc_weight.plan(79, 70, 20, cfg)
+        self.assertTrue(p["blocked"])
+        self.assertEqual(p["average_daily_deficit_kcal"], 0)
+        cfg["weight_loss"]["medical_clearance_confirmed"] = True
+        self.assertNotIn("blocked", arc_weight.plan(79, 70, 20, cfg))
 
 
 if __name__ == "__main__":

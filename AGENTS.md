@@ -19,6 +19,8 @@ planifient, analysent, et persistent tout en fichiers Markdown (français par d�
 ```
 
 - **Toute lecture** (séances, sommeil, HRV, FC de repos, poids, cycle) passe par **Open Wearables**.
+- **Glycémie** (opt-in, `[glucose].enabled`) : MCP **Nightscout**, **lecture seule**. Jamais `log_treatment`,
+  `remove_treatment` ni `update_nightscout_profile` ; jamais de dose ni de réglage de basale/override Loop.
 - **Garmin = écriture seule** : `schedule_workouts`, `schedule_week`, `upload_workout` (+ vérification
   `get_scheduled_workouts`/`get_workout_by_id` de ce qu'on a poussé). Aucun outil de lecture `garmin`
   n'est exposé (`.mcp.json`) ni utilisé. Jamais de push sans « oui » explicite, jamais en headless.
@@ -41,6 +43,7 @@ clé par clé ; une clé présente mais vide gagne). Lecture : `python3 scripts/
 | `[push].target` | `garmin` (seule destination d'entraînements). |
 | `[health].morning_check` | `full` (HRV + FC repos + sommeil) · `minimal` · `off`. |
 | `[health].cycle_tracking` | `off` (défaut, aucune mention) · `ow` · `manual` — opt-in strict. |
+| `[glucose].*` | Glycémie Nightscout (lecture seule, opt-in) : plage cible, seuils de départ avant séance. |
 | `[load].*` | Constantes de condition (42 j) et de fatigue (7 j). |
 | `[guardrails].*` | Seuils et sévérités R1…R7. |
 | `[weight_loss].*` | Déficit par défaut, plancher d'énergie disponible, protéines. |
@@ -83,6 +86,7 @@ omise. Valider : `python3 scripts/arc_contract.py --validate <fichier>`.
 |---|---|
 | `arc_ow.py` | Dédoublonne séances / sommeil / timeseries Open Wearables. |
 | `arc_cycling.py` | Zones de puissance et FC, charge d'une séance, condition / fatigue / forme. |
+| `arc_glucose.py` | Contrôle glycémique avant séance, analyse pendant/après, bilan du jour (Nightscout). |
 | `arc_weight.py` | Tendance de poids, plan de perte, ravitaillement sur le vélo, énergie disponible, BMR. |
 | `arc_guardrails.py` | Garde-fous R1…R7 avant d'écrire / pousser une semaine. |
 | `arc_workout.py` | Construit le DTO Garmin d'une séance vélo (gabarits route et CX). |
@@ -103,7 +107,7 @@ avertissent, ils ne diagnostiquent pas. Voir `config/workspace.toml`.
 ## Skills (`skills/`)
 
 `workspace-data-contract` · `openwearables-sync` · `garmin-workout-scheduling` · `daily-sync` ·
-`coach-setup` · `coach-doctor` · `weather-forecast` · commandes courtes `/today`, `/week`, `/log`.
+`nightscout-glucose` · `coach-setup` · `coach-doctor` · `weather-forecast` · commandes courtes `/today`, `/week`, `/log`.
 
 ## Premier démarrage
 

@@ -14,6 +14,8 @@ Le modèle **extrait** ; les scripts **calculent**. Jamais l'inverse.
 | douleur (zone + score /10) | `medical/AAAA-MM-JJ_health.md` → `pain` (≥ 7/10 : recommander une consultation) |
 | pesée | `medical/` (`weight_kg`) — compte dans la tendance, jamais une décision isolée |
 | repas / apports | `nutrition/AAAA-MM-JJ_nutrition.md` |
+| glucides pris pendant la séance | `activities/` (`carbs_g`) ; **jamais** dans Nightscout (`log_treatment` interdit) — dis à l'athlète de le saisir dans Loop s'il le souhaite |
+| glycémie citée (« 82 au départ ») | note dans le texte du jour ; la mesure fait foi via `nightscout-glucose`, pas la déclaration |
 | phase du cycle déclarée | `cycle_phase`/`cycle_day` — **seulement si** `[health].cycle_tracking` ≠ `off` |
 
 Règles : un produit inconnu ou ambigu → demande l'étiquette, **jamais** de valeur inventée (catalogue :

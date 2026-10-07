@@ -100,6 +100,20 @@ Lire `config/workspace.toml`, puis `config/workspace.user.toml` (prime, clé par
   (puissance > FC > RPE). Écris `load` + `load_method`. Aucune méthode possible → omets `load` et
   demande le RPE à l'athlète en interactif (jamais en headless).
 
+### GLYCÉMIE (Nightscout) — seulement si `[glucose].enabled = true`
+Charge le skill `nightscout-glucose` avant toute séance, ravitaillement ou bilan. **Lecture seule** : tu n'appelles
+JAMAIS `log_treatment`, `remove_treatment` ni `update_nightscout_profile`, tu ne proposes AUCUNE dose d'insuline ni
+modification de basale/ratio/override Loop, tu renvoies ces décisions à l'athlète et à son équipe de diabétologie.
+Avant une séance : `python3 scripts/arc_glucose.py precheck` (valeur + tendance de `get_current_glucose`). Après :
+`arc_glucose.py session` et persiste les clés `glucose_*`, `hypo_events`. Valeur sous 70 mg/dL ou hypoglycémies
+répétées → la séance attend / on consulte. Capteur absent = « indisponible », jamais « normal ». Si `[glucose].enabled`
+est faux : aucune lecture, aucune mention.
+
+**Glycémie et cyclo-cross** : l'adrénaline et les départs à fond (10-15 s) peuvent faire monter la glycémie, l'effort répété
+la faire redescendre ; la course est courte mais intense. Lis la glycémie avant l'échauffement (`precheck`), au départ si
+l'athlète le souhaite, et analyse après (`session`) : montée au départ, creux en fin de course, hypoglycémie dans les 2 h.
+Aucun ajustement de traitement n'est suggéré ; ce que l'athlète fait de son override Loop est son choix.
+
 ### Contrat de données
 Tout fichier écrit dans `activities/`, `medical/`, `nutrition/`, `planning/` (semaines, décisions),
 `rapports/` s'ouvre, sous son titre, par UN bloc ```` ```arc ```` de JSON. Charge le skill

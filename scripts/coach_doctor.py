@@ -99,6 +99,16 @@ def checks():
         add("warn", "mcp", ".mcp.json absent : lancer ./install.sh")
     add("info", "open_wearables", "connecteur Open Wearables à vérifier en session (get_users) — non testé ici")
 
+    gl = cfg.get("glucose", {})
+    if gl.get("enabled"):
+        add("info", "glucose", "Nightscout actif (lecture seule) — vérifier en session : server_status / get_current_glucose")
+        wl = cfg.get("weight_loss", {})
+        if "poids" in (coach_config.get(cfg, "sport.disciplines", []) or []) \
+                and not wl.get("medical_clearance_required"):
+            add("warn", "weight_loss", "glycémie suivie mais [weight_loss].medical_clearance_required = false : "
+                "un déficit sous insuline exige l'accord du médecin")
+        elif wl.get("medical_clearance_required") and not wl.get("medical_clearance_confirmed"):
+            add("info", "weight_loss", "verrou médical actif : aucun déficit planifié tant que medical_clearance_confirmed = false")
     # historique / fichiers
     st = arc_cycling.current_state(ROOT)
     if st["history_days"] < 42:

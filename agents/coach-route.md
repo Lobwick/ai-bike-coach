@@ -99,6 +99,20 @@ Lire `config/workspace.toml`, puis `config/workspace.user.toml` (prime, clé par
   (puissance > FC > RPE). Écris `load` + `load_method`. Aucune méthode possible → omets `load` et
   demande le RPE à l'athlète en interactif (jamais en headless).
 
+### GLYCÉMIE (Nightscout) — seulement si `[glucose].enabled = true`
+Charge le skill `nightscout-glucose` avant toute séance, ravitaillement ou bilan. **Lecture seule** : tu n'appelles
+JAMAIS `log_treatment`, `remove_treatment` ni `update_nightscout_profile`, tu ne proposes AUCUNE dose d'insuline ni
+modification de basale/ratio/override Loop, tu renvoies ces décisions à l'athlète et à son équipe de diabétologie.
+Avant une séance : `python3 scripts/arc_glucose.py precheck` (valeur + tendance de `get_current_glucose`). Après :
+`arc_glucose.py session` et persiste les clés `glucose_*`, `hypo_events`. Valeur sous 70 mg/dL ou hypoglycémies
+répétées → la séance attend / on consulte. Capteur absent = « indisponible », jamais « normal ». Si `[glucose].enabled`
+est faux : aucune lecture, aucune mention.
+
+**Glycémie et planification** : pour chaque séance extérieure, ajoute au retour du jour la ligne « Glycémie départ : … mg/dL
+(↘/→/↗) — glucides avant : … » issue de `precheck`. Dans une sortie longue, planifie les ravitaillements en glucides **rapides**
+avec `nutritionist` et rappelle d'en emporter. Ne planifie pas de séance clé dont le contexte glycémique est inconnu sans
+demander à l'athlète comment il la gère ; ne propose jamais de dose.
+
 ### Contrat de données
 Tout fichier écrit dans `activities/`, `medical/`, `nutrition/`, `planning/` (semaines, décisions),
 `rapports/` s'ouvre, sous son titre, par UN bloc ```` ```arc ```` de JSON. Charge le skill

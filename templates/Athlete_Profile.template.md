@@ -29,6 +29,7 @@ jamais de valeur inventée). Clés possibles : `ftp_w`, `lthr_bpm`, `hr_max_bpm`
 - Autre matériel :
 
 ## Antécédents de santé / blessures
+- Condition à surveiller (ex. diabète, traitement, suivi glycémique) :
 -
 
 ## Historique de performances

@@ -57,6 +57,14 @@ def _ord(iso):
 
 
 def plan(weight, target, weeks, cfg):
+    wl = cfg.get("weight_loss", {})
+    if wl.get("medical_clearance_required") and not wl.get("medical_clearance_confirmed"):
+        return {"blocked": True, "average_daily_deficit_kcal": 0, "within_guardrail": False,
+                "reason": "accord médical requis ([weight_loss].medical_clearance_required) et non confirmé : "
+                          "aucun déficit n'est planifié, maintien énergétique. Un déficit change les besoins en "
+                          "insuline et le risque d'hypoglycémie : en parler à l'équipe de diabétologie, puis "
+                          "passer medical_clearance_confirmed à true.",
+                "disclaimer": "ce n'est pas un avis médical"}
     loss = weight - target
     max_pct = coach_config.get(cfg, "guardrails.r6_weight_loss_max_pct_per_week", 1.0)
     rate_kg_wk = loss / weeks

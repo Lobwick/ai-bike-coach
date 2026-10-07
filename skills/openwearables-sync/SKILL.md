@@ -34,3 +34,5 @@ projet.** Garmin n'est utilisé que pour pousser des séances (skill `garmin-wor
    Une source peut manquer un jour (capteur non porté) : « indisponible », pas une anomalie.
 10. **Poids / masse grasse** : l'ordre des sources suit `[data].source_priority` ; ne retiens que la
     tendance pour décider (`arc_weight.py trend`).
+11. **Glycémie** : elle ne vient PAS d'Open Wearables mais du MCP Nightscout (skill `nightscout-glucose`, lecture seule,
+    si `[glucose].enabled`). Les deux se recoupent par l'heure de la séance (début/fin déjà dédoublonnés).
