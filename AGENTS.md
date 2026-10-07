@@ -4,8 +4,8 @@ Espace de travail de coaching **vélo de route**, **cyclo-cross (CX)** et **pert
 planifient, analysent, et persistent tout en fichiers Markdown (français par défaut).
 
 > Dérivé de `mmornati/ai-running-coach` (course à pied / trail), réécrit pour le vélo.
-> L'ancien moteur (trail shape, GAP, pacing de course, tableau de bord web, chat, Telegram, index SQLite)
-> a été retiré ; il reste dans l'historique git.
+> L'ancien moteur (trail shape, GAP, pacing de course, chat, Telegram, index SQLite) a été retiré ; il reste dans
+> l'historique git. Le tableau de bord a été **reconstruit** pour le vélo (voir `scripts/arc_serve.py`).
 
 ## Flux de données — la règle d'or
 
@@ -94,6 +94,7 @@ omise. Valider : `python3 scripts/arc_contract.py --validate <fichier>`.
 | `arc_workout.py` | Construit le DTO Garmin d'une séance vélo (gabarits route et CX). |
 | `arc_contract.py` | Valide les blocs `arc`. |
 | `coach_config.py` · `coach_doctor.py` | Configuration · diagnostic. |
+| `arc_serve.py` · `dashboard.sh` | **Tableau de bord local** en lecture seule (`./scripts/dashboard.sh` → http://127.0.0.1:8765/) : forme, plan, courses, séances, santé et glycémie déjà persistées. 127.0.0.1 uniquement, CSP stricte, aucun appel externe. |
 | `daily-sync.sh` | Synchronisation headless (cron). |
 
 Vocabulaire de charge **générique** : *charge*, *condition* (42 j), *fatigue* (7 j), *forme*. Jamais les

@@ -131,6 +131,11 @@ protein_g_per_kg = 1.8
 medical_clearance_required = false
 medical_clearance_confirmed = false
 
+[dashboard]
+# Tableau de bord local (`scripts/dashboard.sh`) : lecture seule, n'écoute que sur 127.0.0.1
+# (adresse non configurable). Si le port est pris, les 9 suivants sont essayés.
+port = 8765
+
 [sync]
 # Synchronisation automatique headless (scripts/daily-sync.sh, `claude -p /daily-sync`).
 runner = "claude"

@@ -20,6 +20,14 @@ claude                               # puis /coach-setup
 Prérequis : Python ≥ 3.9 (aucune dépendance), un connecteur **Open Wearables** actif dans la session,
 `garmin-mcp` installé et authentifié (pour pousser seulement).
 
+## Tableau de bord
+
+```bash
+./scripts/dashboard.sh        # http://127.0.0.1:8765/ — lecture seule, local, aucune dépendance
+```
+Forme et charge, plan de la semaine, calendrier des courses UFOLEP, séances, santé et glycémie **déjà enregistrées** dans tes fichiers.
+N'écoute que sur `127.0.0.1`, n'interroge ni Open Wearables, ni Nightscout, ni Garmin, n'écrit rien.
+
 ## Commandes
 
 `/coach-setup` · `/today` · `/week` · `/log` · `/daily-sync` (headless, cron) · `/coach-doctor`.
