@@ -54,3 +54,6 @@ logs/
 # État local de Serena
 .serena/
 .gstack/
+
+# Déploiement Freebox : secrets
+deploy/freebox/.env

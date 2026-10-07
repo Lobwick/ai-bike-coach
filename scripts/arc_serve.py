@@ -3,8 +3,11 @@
 
     python3 scripts/arc_serve.py [--port 8765] [--workspace .]
 
-- Écoute UNIQUEMENT sur 127.0.0.1 (l'adresse n'est pas configurable) ; si le port est pris, les 9 suivants sont essayés.
-- GET seulement ; l'en-tête Host doit être localhost / 127.0.0.1 (protection contre le « DNS rebinding »).
+- Par défaut, écoute UNIQUEMENT sur 127.0.0.1 ; si le port est pris, les 9 suivants sont essayés.
+  Déploiement derrière un proxy (Freebox/Traefik) : `ARC_LISTEN=0.0.0.0` n'est accepté QUE si `ARC_ALLOWED_HOSTS` (noms
+  d'hôte autorisés, séparés par des virgules) ET `ARC_PROXY_AUTH=1` (« un proxy authentifie devant moi ») sont posés ;
+  sinon le serveur refuse de démarrer. Jamais d'accès sans authentification sur autre chose que la boucle locale.
+- GET seulement ; l'en-tête Host doit être localhost / 127.0.0.1 ou un hôte de `ARC_ALLOWED_HOSTS` (« DNS rebinding »).
 - CSP stricte : aucun script ni style inline. SEULE ressource externe, comme dans le tableau de bord d'origine :
   les polices Sora/Inter de Google Fonts, désactivables par `[dashboard].web_fonts = false` (repli sur les polices du
   système). Le texte venant des fichiers est échappé par défaut avant d'entrer dans le DOM (`h` dans `web/js/app.js`).
@@ -275,8 +278,27 @@ def api_weight(root, today=None):
     return out
 
 
-ROUTES = {"/api/today": api_today, "/api/decisions": api_decisions, "/api/weight": api_weight, "/api/summary": api_summary, "/api/plan": api_plan, "/api/load": api_load,
+def api_version(root):
+    """Empreinte des fichiers de données : la page la sonde et se recharge quand elle change (rechargement dynamique)."""
+    import hashlib
+    h = hashlib.sha1()
+    for sub_ in ("activities", "medical", "nutrition", "planning", "rapports"):
+        for p in sorted(glob.glob(os.path.join(root, sub_, "*.md"))):
+            try:
+                st = os.stat(p)
+            except OSError:
+                continue
+            h.update(f"{os.path.relpath(p, root)}:{st.st_mtime_ns}:{st.st_size}\n".encode())
+    return {"version": h.hexdigest()[:16]}
+
+
+ROUTES = {"/api/version": api_version, "/api/today": api_today, "/api/decisions": api_decisions, "/api/weight": api_weight, "/api/summary": api_summary, "/api/plan": api_plan, "/api/load": api_load,
           "/api/activities": api_activities, "/api/health": api_health, "/api/calendar": api_calendar}
+
+
+def allowed_hosts():
+    extra = [h.strip().lower() for h in os.environ.get("ARC_ALLOWED_HOSTS", "").split(",") if h.strip()]
+    return {"127.0.0.1", "localhost", *extra}
 
 
 def make_handler(root):
@@ -302,8 +324,8 @@ def make_handler(root):
             self.wfile.write(data)
 
         def _host_ok(self):
-            host = (self.headers.get("Host") or "").rsplit(":", 1)[0].strip("[]")
-            return host in ("127.0.0.1", "localhost")
+            host = (self.headers.get("Host") or "").rsplit(":", 1)[0].strip("[]").lower()
+            return host in allowed_hosts()
 
         def do_GET(self):  # noqa: N802
             if not self._host_ok():
@@ -334,10 +356,22 @@ def make_handler(root):
     return H
 
 
+def listen_address():
+    """Boucle locale par défaut ; autre adresse seulement avec hôtes autorisés ET proxy authentifiant déclarés."""
+    addr = os.environ.get("ARC_LISTEN", "127.0.0.1")
+    if addr not in ("127.0.0.1", "localhost"):
+        if not os.environ.get("ARC_ALLOWED_HOSTS", "").strip():
+            raise SystemExit("ARC_LISTEN hors boucle locale : ARC_ALLOWED_HOSTS est obligatoire")
+        if os.environ.get("ARC_PROXY_AUTH") != "1":
+            raise SystemExit("ARC_LISTEN hors boucle locale : exige ARC_PROXY_AUTH=1 (un proxy authentifie devant le site)")
+    return addr
+
+
 def serve(root=ROOT, port=8765, tries=10):
+    addr = listen_address()
     for p in range(port, port + tries):
         try:
-            srv = socketserver.ThreadingTCPServer(("127.0.0.1", p), make_handler(root))
+            srv = socketserver.ThreadingTCPServer((addr, p), make_handler(root))
             srv.daemon_threads = True
             srv.allow_reuse_address = True
             return srv, p
@@ -356,7 +390,7 @@ def main(argv):
         elif k == "--workspace":
             root = os.path.abspath(a.pop(0))
     srv, p = serve(root, port)
-    print(f"Tableau de bord : http://127.0.0.1:{p}/  (Ctrl-C pour arrêter)", flush=True)
+    print(f"Tableau de bord : http://{srv.server_address[0]}:{p}/  (Ctrl-C pour arrêter)", flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

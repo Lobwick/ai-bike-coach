@@ -19,7 +19,7 @@ function mount(host, content) {
   host.replaceChildren(...doc.body.childNodes);
 }
 
-const api = (u) => fetch(u).then((r) => { if (!r.ok) throw new Error(`${u} ${r.status}`); return r.json(); });
+const api = (u) => fetch(u.replace(/^\//, "")).then((r) => { if (!r.ok) throw new Error(`${u} ${r.status}`); return r.json(); });
 const cap = (s) => s.replace(/^./, (c) => c.toUpperCase());
 const dash = "—";
 const nz = (v, d = 0) => (v == null ? dash : F.num(v, d));
@@ -89,7 +89,7 @@ async function viewToday() {
   const rows = t.metrics.map((m) => h`<tr><th scope="row">${m.label}</th><td class="triad__value">${metricValue(m)}</td><td class="triad__bar">${rangeBar(m)}</td><td class="triad__ctx">${metricCtx(m)}</td></tr>`);
 
   const plan = t.today_sessions.length
-    ? h`<ul class="plan">${t.today_sessions.map((x) => h`<li><span class="plan__title">${x.title}</span><span class="plan__meta">${F.duration(x.duration_s)}${x.planned_load != null ? ` · charge ≈ ${Math.round(x.planned_load)}` : ""}</span>${x.race ? chip("verdict-amber", "Course") : x.fixed ? chip("status-planned", "Club imposée") : chip("status-planned", "Prévue")}</li>`)}</ul>`
+    ? h`<ul class="plan">${t.today_sessions.map((x) => h`<li><span class="plan__title">${x.title}</span><span class="plan__meta">${F.duration(x.duration_s)}${x.planned_load != null ? ` · charge ≈ ${Math.round(x.planned_load)}` : ""}</span>${x.status === "cancelled" ? chip("status-cancelled", "Annulée") : x.status === "done" ? chip("status-done", "Faite") : x.status === "missed" ? chip("status-missed", "Manquée") : x.status === "moved" ? chip("status-moved", "Déplacée") : ""}${x.race ? chip("verdict-amber", "Course") : x.fixed ? chip("status-planned", "Club imposée") : chip("status-planned", "Prévue")}</li>`)}</ul>`
     : h`<p class="muted">Rien de planifié aujourd'hui.</p>`;
   const next = t.upcoming.length
     ? h`<p class="note">À venir : ${t.upcoming.map((x) => `${F.weekday(x.date)} ${F.dayShort(x.date)} — ${x.title}`).join(" · ")}</p>` : "";
@@ -283,8 +283,23 @@ function setupTheme() {
   });
 }
 
+// Rechargement dynamique : la page sonde l'empreinte des fichiers (30 s, seulement onglet visible) et relit la vue quand
+// elle change — modifier le plan depuis le mobile apparaît sans rien relancer.
+let VERSION = null;
+async function watch() {
+  if (document.hidden) return;
+  try {
+    const v = (await api("/api/version")).version;
+    if (VERSION && v !== VERSION) { STATE.summary = await api("/api/summary"); renderObjective(STATE.summary); go(); }
+    VERSION = v;
+  } catch (e) { /* serveur momentanément indisponible : on réessaie au prochain tour */ }
+}
+
 (async function main() {
   setupTheme();
+  setInterval(watch, 30000);
+  document.addEventListener("visibilitychange", watch);
+  watch();
   try { STATE.summary = await api("/api/summary"); renderObjective(STATE.summary); } catch (e) { STATE.summary = { disciplines: [] }; }
   window.addEventListener("hashchange", go);
   go();

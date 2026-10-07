@@ -31,6 +31,12 @@ enregistré** dans tes fichiers (séances, bilans, glycémie, plan). N'écoute q
 Nightscout, ni Garmin, n'écrit rien. Seule requête externe : les polices Sora/Inter (Google Fonts, adresse IP visible de Google) ;
 `[dashboard].web_fonts = false` les désactive.
 
+## Accès depuis le mobile (optionnel, Freebox / serveur perso)
+
+`deploy/freebox/` déploie derrière Traefik le **site** (mot de passe) et une **API MCP** (jeton) qui laissent Claude mobile lire et modifier
+le plan, le profil et les fichiers, avec validation du contrat, un commit git par écriture et un `undo`. Le site relit les fichiers
+à chaque chargement (rechargement automatique) : rien à reconstruire. Voir `deploy/freebox/README.md`.
+
 ## Commandes
 
 `/coach-setup` · `/today` · `/week` · `/log` · `/daily-sync` (headless, cron) · `/coach-doctor`.

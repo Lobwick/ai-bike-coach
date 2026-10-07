@@ -1,0 +1,26 @@
+# Les données personnelles ne doivent JAMAIS entrer dans une image Docker.
+activities
+medical
+nutrition
+planning
+rapports
+resources
+gear
+logs
+.git
+.github
+.claude
+.opencode
+.serena
+.gstack
+.cursor
+.gemini
+.windsurf
+tests
+docs
+config/workspace.user.toml
+.mcp.json
+**/.env
+**/.env.*
+**/*.bak
+__pycache__
