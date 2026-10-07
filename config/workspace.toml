@@ -1,370 +1,112 @@
-# Configuration de l'espace de travail ai-running-coach
+# Configuration de l'espace de travail ai-cycling-coach
 #
-# Ce fichier est VERSIONNÉ : il contient les valeurs par défaut partagées.
-# Pour des overrides personnels, créez `config/workspace.user.toml`
-# (gitignoré) avec la même structure — ses valeurs priment.
+# Ce fichier est VERSIONNÉ : défauts partagés. Pour des overrides personnels,
+# créez `config/workspace.user.toml` (gitignoré) avec la même structure —
+# ses valeurs priment, clé par clé. Une clé présente mais vide gagne.
 
 [language]
-# Langue des fichiers Markdown persistés par les agents/skills
-# (activities/, medical/, nutrition/, planning/, rapports/, gear/).
-# Valeurs : code ISO 639-1 (ex. "fr", "en", "nl").
+# Langue des Markdown persistés (activities/, medical/, nutrition/, planning/, rapports/).
 documents = "fr"
-
-# Langue des réponses à l'utilisateur.
-# "auto" = même langue que la requête de l'utilisateur.
+# Langue des réponses. "auto" = celle de la requête.
 responses = "auto"
 
-[notifications]
-# Notification push envoyée après chaque synchronisation automatique
-# (scripts/daily-sync.sh → scripts/notify.sh). Configurez-la avec
-# `scripts/setup-ntfy.sh` (écrit les overrides dans workspace.user.toml).
-# Valeurs : "ntfy" (appli gratuite iOS/Android, serveur public ou auto-hébergé) | "none".
-provider = "none"
-# Serveur ntfy : public (https://ntfy.sh) ou auto-hébergé.
-ntfy_url = "https://ntfy.sh"
-# Sujet (topic) auquel votre téléphone est abonné — choisissez-le difficile à deviner.
-ntfy_topic = ""
-# Fichier contenant un token d'accès (serveur avec authentification) — optionnel.
-# Jamais versionné : à placer hors du dépôt, ex. "~/.config/ai-running-coach/ntfy.token".
-ntfy_token_file = ""
-
-# Alerte d'expiration des tokens Garmin (#32) : `scripts/daily-sync.sh` interroge
-# `coach_doctor.py --check garmin_token` avant chaque synchronisation. Sans effet
-# si `provider = "none"`.
-token_alerts = true
-# Seuils, en jours restants avant l'échéance estimée, qui déclenchent une alerte.
-# Entiers positifs uniquement (toute valeur non entière est ignorée avec un
-# avertissement, jamais évaluée). Le seuil le plus proche de l'échéance (le plus
-# petit, ainsi que « expiré ») alerte au maximum une fois par jour jusqu'au
-# renouvellement ; un seuil plus lointain (ex. J-14) n'alerte qu'une seule fois
-# tant que l'échéance n'a pas atteint le seuil suivant. Une liste vide (`[]`, ou
-# ne contenant plus aucun entier valide après filtrage) désactive l'alerte
-# d'expiration — sans effet sur la notification 401 explicite, elle toujours active.
-token_alert_days = [14, 3]
-
-[sync]
-# Synchronisation Garmin automatique (voir docs/mobile.md et scripts/daily-sync.sh).
-# Exécuteur headless : "claude" (Claude Code, `claude -p`) | "codex" (Codex CLI, `codex exec`)
-# | "opencode" (OpenCode, `opencode run` — OpenRouter ou toute API compatible OpenAI).
-runner = "claude"
-# Modèle du runner : requis pour "opencode" (format fournisseur/modèle, ex.
-# "openrouter/deepseek/deepseek-v4.1-flash"), optionnel en mode API pour "claude"
-# (passé à `--model`). Vide = le modèle par défaut de l'abonnement.
-model = ""
-# Point d'accès d'une API compatible OpenAI autre qu'OpenRouter (runner "opencode").
-base_url = ""
-# NOM de la variable qui porte la clé API, lue dans ~/.config/ai-running-coach/llm.env
-# (mode 600) — jamais la clé elle-même. Non vide = mode API (facturé au token) ;
-# vide = abonnement. Ex. "OPENROUTER_API_KEY", "ANTHROPIC_API_KEY".
-api_key_env = ""
-# Plafond de dépense quotidien en EUR de la synchronisation. Appliqué seulement quand le
-# runner rapporte son coût (opencode, claude en mode API) : au-delà, le run est sauté
-# et une notification part. Sans effet en abonnement.
-daily_budget_eur = 0.5
-# Déclenchement (réinstaller avec `./install.sh --daily-sync` après un changement) :
-#   "schedule" — le LLM tourne aux heures fixes de `times`, qu'il y ait du neuf ou non.
-#   "watch"    — scripts/garmin_watch.py interroge Garmin toutes les `watch_interval_min`
-#                minutes SANS LLM (un appel HTTP, zéro token) et ne lance la synchronisation
-#                que si une séance ou le sommeil du jour manque dans le workspace : le bilan
-#                matinal suit votre réveil réel, une séance du soir est traitée le soir.
-#                Garmin uniquement ([data].source = "garmin") — voir docs/mobile.md.
-mode = "schedule"
-# Heures locales de lancement en mode "schedule" (cron/launchd).
-# Défaut : après la nuit (sommeil/HRV synchronisés) et après la sortie du midi.
-times = ["07:15", "14:15"]
-# Mode "watch" : intervalle entre deux sondages Garmin (1 à 59 min).
-watch_interval_min = 15
-# Mode "watch" : délai après le dernier envoi de la montre avant de lancer le LLM, le
-# temps que Garmin calcule score de sommeil et readiness.
-settle_min = 10
-# Mode "watch" : écart minimal entre deux runs LLM, et plafond de runs par jour.
-min_gap_min = 30
-max_runs_per_day = 6
-# Mode "watch" : filet de sécurité — si aucun run n'a eu lieu à ces heures, un run complet
-# part quand même (tokens expirés, sonde aveugle…). `[]` le désactive.
-fallback_times = ["21:30"]
-# Nombre de jours à vérifier (aujourd'hui inclus) — seuls les fichiers MD manquants sont récupérés.
-lookback_days = 2
-# Après chaque run, `git add -A && git commit && git push` dans le workspace s'il est
-# un dépôt git (données de la sync + fichiers créés par les sessions mobiles).
-# À activer dans workspace.user.toml quand le workspace est votre dépôt privé
-# (voir docs/workspace.md). Le push exige un remote accessible sans mot de passe (clé SSH).
-git_autocommit = false
-
 [athlete]
-# Profil de l'athlète : fichier Markdown libre, dans votre workspace, jamais
-# versionné dans le dépôt public. Créé par `/coach-setup` depuis
-# `templates/Runner_Profile.template.md`.
-profile = "planning/Runner_Profile.md"
-# Unités des distances, allures et poids. Valeurs : "metric" | "imperial".
+# Profil de l'athlète (jamais versionné). Créé par `/coach-setup` depuis
+# `templates/Athlete_Profile.template.md`.
+profile = "planning/Athlete_Profile.md"
+# "metric" | "imperial" — distances, poids, vitesses.
 units = "metric"
-# Méthode de calcul des zones FC (#43, temps en zone + polarisation 80/20).
-#   "auto"        — précédence par défaut : FC au seuil (LTHR) si connue au profil,
-#                   sinon Karvonen (FC max/repos), sinon %FCmax (FC max seule)
-#   "lthr"        — force la FC au seuil (rien si absente du profil)
-#   "karvonen"    — force la réserve FC (rien si FC max ou repos absente)
-#   "percent_max" — force le %FCmax (rien si FC max absente)
-# Une valeur autre que "auto" force cette méthode SANS repli si le champ requis manque.
-hr_zones = "auto"
-
-[sport]
-# Discipline principale — détermine le profil chargé depuis `config/sports/`.
-# Valeurs : "trail" | "road".
-primary = "trail"
-# Sports croisés pratiqués, pour la planification hebdomadaire.
-# Ex. ["cycling", "swimming", "strength"].
-disciplines = []
 
 [agents]
-# Agents installés et joignables. Retirez-en pour alléger votre staff : le coach
-# ne délègue qu'aux agents listés ici, et `./install.sh` n'installe que ceux-là.
-# `./install.sh --no-medical` ou `--agents coach,nutritionist` écrit cette clé.
-enabled = ["coach", "medical", "nutritionist", "course-strategist"]
+# Agents joignables. Le coach ne délègue qu'à ceux-là.
+#   coach-route  — vélo de route (endurance, sorties longues, cyclosportives, montagne)
+#   coach-cx     — cyclocross (départs, relances, technique, format course 40-60 min)
+#   coach-poids  — perte de poids (déficit, composition corporelle) compatible avec l'entraînement
+#   medical      — sommeil, HRV, FC de repos, blessures, gatekeeper de disponibilité
+#   nutritionist — macros, ravitaillement sur le vélo, énergie disponible
+enabled = ["coach-route", "coach-cx", "coach-poids", "medical", "nutritionist"]
 
 [coaching]
-# Comment le coach vous parle. Voir `config/coaching-styles.md` pour ce que
-# chaque valeur implique concrètement.
-# Valeurs : "bienveillant" | "exigeant" | "factuel" | "pedagogue".
-style = "bienveillant"
-# Avec quelle force le style s'applique. Valeurs : "gentle" | "balanced" | "strong".
-intensity = "balanced"
-# Longueur des retours et des rapports. Valeurs : "brief" | "standard" | "detailed".
-verbosity = "standard"
+# Voix des coachs → `config/coaching-styles.md`.
+style = "bienveillant"      # bienveillant | exigeant | factuel | pedagogue
+intensity = "balanced"      # gentle | balanced | strong
+verbosity = "standard"      # brief | standard | detailed
 
-[health]
-# Bilan matinal avant toute décision de séance.
-#   "full"    — le triptyque HRV + FC de repos + readiness (défaut, recommandé)
-#   "minimal" — readiness seule, sans analyse HRV/FC de repos
-#   "off"     — aucun filtrage santé : le coach planifie sur la charge
-#               d'entraînement et votre ressenti déclaré
-# Passer à "minimal" ou "off" si votre montre ne mesure pas la HRV, ou si vous
-# ne souhaitez pas que l'entraînement soit conditionné à ces données.
-morning_check = "full"
-# Seuil (°C) au-delà duquel une séance outdoor compte comme « chaude » dans le KPI
-# d'acclimatation à la chaleur (#38, `temp_max_c` du jour ≥ ce seuil, borne incluse).
-# Indépendant de `morning_check` (jointure activité/météo, pas du bilan matinal).
-heat_threshold_c = 25.0
-# Contexte du cycle menstruel (#166) — OPT-IN STRICT, jamais présumé.
-#   "off"    — défaut : aucune donnée de cycle récupérée, aucun outil exposé,
-#              aucune mention par les agents
-#   "garmin" — phase lue sur Garmin Connect (outils get_menstrual_* de garmin-mcp,
-#              ajoutés à la liste blanche SEULEMENT dans ce mode : relancer
-#              `./install.sh` après le changement, voir docs/configuration.md).
-#   "intervals" — [data].source = "intervals" : champ wellness menstrualPhase
-#              d'intervals.icu, lu avec le bilan matinal (aucune installation à refaire)
-#   "manual" — phase déclarée par vous-même via /log
-# Le cycle est un CONTEXTE de lecture (HRV, FC de repos, hydratation, chaleur),
-# jamais une règle automatique ni un diagnostic. Valeur invalide = "off" + avertissement.
-cycle_tracking = "off"
-
-[nutrition]
-# Poussée des apports vers Garmin Connect (#167) — OPT-IN STRICT.
-#   "off" — défaut : rien n'est jamais poussé, aucun outil de journal alimentaire/hydratation
-#           n'est exposé (liste blanche inchangée)
-#   "ask" — après un /log ou un rapport nutrition, le coach PROPOSE de pousser l'apport vers le
-#           journal alimentaire et l'hydratation de Garmin Connect ; chaque poussée exige un
-#           « oui » explicite, n'a jamais lieu en headless (daily-sync) et reste idempotente
-#           (trace `garmin_pushed`). Les outils ne sont ajoutés à la liste blanche qu'à
-#           l'installation : relancer `./install.sh` après le changement (ou
-#           `./install.sh --nutrition-sync ask`).
-# Indisponible avec [data].source = "intervals" ou "strava" (dit explicitement). Valeur invalide = "off".
-# Une seule source de vérité par jour : voir docs/configuration.md.
-garmin_sync = "off"
+[sport]
+# Disciplines pratiquées : détermine quels profils `config/sports/<id>.md` sont chargés.
+# Valeurs : "route" | "cx" | "poids". Plusieurs possibles.
+disciplines = ["route", "cx", "poids"]
+# Autres sports programmables en croisé (renforcement, course à pied…).
+cross = ["strength"]
 
 [data]
-# Source de données primaire des agents (#68).
-#   "garmin"    — Garmin Connect, via garmin-mcp (défaut, comportement historique)
-#   "intervals" — intervals.icu (ouvre le projet aux montres non-Garmin : COROS,
-#                 Suunto, Polar, Apple — tout ce qu'intervals.icu synchronise),
-#                 via le serveur MCP communautaire hhopke/intervals-icu-mcp (#165)
-#   "strava"    — Strava (#164), source « universelle » (toutes marques de montres) :
-#                 activités + flux par seconde (donc les KPI FIT : zones, GAP,
-#                 découplage, VAM…) via le serveur MCP communautaire r-huijts/strava-mcp
-#                 (npm, nécessite Node.js >= 18). Pas de HRV, de FC de repos, de sommeil
-#                 ni de readiness côté Strava : `[health].morning_check` se dégrade
-#                 explicitement. Voir docs/strava-setup.md.
-# Change la source des outils appelés par `coach`/`medical`/`garmin-daily-sync`
-# (voir la table de correspondance dans AGENTS.md) et la destination du push de
-# séances planifiées. Certaines fonctionnalités Garmin (téléchargement FIT,
-# upload de parcours, score de readiness algorithmique) n'ont pas d'équivalent
-# côté intervals.icu et sont alors explicitement indisponibles plutôt que
-# devinées — voir AGENTS.md, section « Backends MCP ». `./install.sh --source
-# intervals` (ou `--source strava`) installe le serveur correspondant et écrit cette clé.
-source = "garmin"
+# SOURCE DES DONNÉES : Open Wearables (MCP agrégateur Garmin/Whoop/Apple/Strava…).
+# Lecture seule. Les doublons entre sources sont éliminés par `scripts/arc_ow.py dedup`.
+source = "openwearables"
+# Identifiant Open Wearables de l'athlète (UUID, `get_users`). Vide = le demander au MCP.
+ow_user_id = ""
+# Priorité des sources quand la même séance existe en plusieurs exemplaires
+# (la première gagne ; les champs absents sont complétés par les suivantes).
+source_priority = ["garmin", "strava", "whoop", "apple"]
 
-[metrics]
-# VAM sur les montées détectées (#46) : gain d'altitude minimal (m) et pente
-# moyenne minimale (points de pourcentage, ex. 5 = 5 %) pour qu'une montée soit
-# détectée — les DEUX critères doivent être atteints. Défauts : 50 m et 5 %.
-# À adapter au terrain habituel (relever `climb_min_gain_m` en plaine
-# vallonnée pour ignorer les faux plats, l'abaisser en montagne pour capter de
-# courts raidillons).
-climb_min_gain_m = 50.0
-climb_min_grade_pct = 5.0
+[push]
+# DESTINATION DES ENTRAÎNEMENTS : Garmin Connect uniquement (outils `garmin-mcp` d'écriture).
+# Aucune donnée n'est LUE depuis Garmin — tout vient d'Open Wearables.
+target = "garmin"
+# Jamais de push sans « oui » explicite dans la conversation, jamais en headless.
+require_confirmation = true
+
+[health]
+# Bilan matinal avant toute décision de séance (HRV + FC de repos + sommeil via Open Wearables).
+#   "full"    — HRV + FC de repos + durée de sommeil, avant toute décision
+#   "minimal" — durée de sommeil seule, en une ligne
+#   "off"     — aucun filtrage santé
+morning_check = "full"
+# Contexte du cycle menstruel — OPT-IN STRICT. "off" | "ow" (get_menstrual_cycles) | "manual".
+cycle_tracking = "off"
+
+[load]
+# Modèle de charge d'entraînement (scripts/arc_cycling.py). Constantes de temps en jours.
+condition_days = 42
+fatigue_days = 7
+# Source de la charge par séance, par ordre de précédence :
+#   puissance (FTP au profil) > FC (seuil LTHR au profil) > TRIMP (FC max/repos).
+# Ouverte aux données Open Wearables : la plupart des séances n'ont PAS de puissance.
 
 [guardrails]
-# Moteur de garde-fous déterministe (#52, `scripts/arc_guardrails.py`) : un
-# second avis calculé, consulté par le coach avant d'écrire une semaine et
-# avant de la pousser au calendrier Garmin (câblage : #53). Défauts documentés
-# ici ; voir `scripts/arc_guardrails.py::ASSUMPTIONS` pour la méthode complète
-# et les sources de chaque règle.
 enabled = true
-# R1 : ACWR (charge aiguë/chronique) PROJETÉ — maximum sur la semaine proposée,
-# jamais évaluée avec moins de 84 j d'historique réel (voir
-# MIN_HISTORY_DAYS_FOR_PROJECTION) — au-delà de ce seuil, même repère indicatif
-# que `[health]` ci-dessus, pas un seuil de blessure prouvé (Gabbett 2016,
-# réserves scientifiques importantes documentées dans `ASSUMPTIONS`).
-r1_acwr_max = 1.3
-# R2 : hausse de la durée hebdomadaire planifiée (+ distance en `[sport].primary
-# = "road"`) au-delà de ce pourcentage vs la référence choisie ci-dessous.
-r2_volume_increase_max_pct = 10.0
-# Référence de comparaison pour R2/R3 : "mean4" (moyenne des 4 semaines
-# précédentes, DÉFAUT — lisse une semaine de récupération isolée, qui donnerait
-# sinon une fausse alerte à +100 % vs la seule semaine précédente) ou
-# "previous_week" (semaine précédente, plus réactif mais plus sensible aux
-# à-coups).
-r2_volume_reference = "mean4"
-# R3 : hausse du D+ hebdomadaire planifié au-delà de ce pourcentage
-# ([sport].primary = "trail" seulement — le D+ n'a pas de sens sur route).
-r3_elevation_increase_max_pct = 10.0
-# R4 : monotonie de Foster PROJETÉE sur la semaine proposée au-delà de ce seuil
-# (même garde d'historique minimal que R1).
-r4_monotony_max = 2.0
-# R6 : part de la plus longue sortie planifiée dans le volume hebdomadaire
-# planifié total (famille course à pied), au-delà de ce pourcentage — jamais
-# évaluée avec moins de 4 séances de la famille course dans la semaine
-# (R6_MIN_SESSIONS, sinon la part dépasse presque toujours ce seuil par pure
-# construction arithmétique).
-r6_long_run_share_max_pct = 35.0
-# Sévérité par règle : "info" | "warn" | "block". Seul R5 (qualité après un
-# verdict santé rouge) bloque par défaut. R1 (ACWR) est passée à "warn" : les
-# seuils de Gabbett viennent de sports collectifs avec des moyennes glissantes
-# simples 7/28 j, pas du modèle impulsion-réponse de Banister (7/42 j) évalué
-# en fin de semaine que ce moteur utilise — la preuve elle-même est contestée
-# dans la littérature de course à pied (voir `docs/marques.md`, avertissement
-# ACWR). Remettez-la à "block" si vous préférez la fermeté.
-severity_r1_acwr_projected = "warn"
-severity_r2_weekly_volume_jump = "warn"
-severity_r3_weekly_elevation_jump = "warn"
-severity_r4_monotony_projected = "warn"
+# R1 : rampe de condition (points de charge/jour/semaine) au-delà de laquelle on avertit.
+r1_ramp_max_per_week = 8.0
+# R2 : hausse de la charge hebdo planifiée vs moyenne des 4 semaines précédentes (%).
+r2_weekly_load_increase_max_pct = 15.0
+# R3 : nombre max de jours d'intensité (seuil et plus) consécutifs.
+r3_consecutive_hard_max = 2
+# R4 : fatigue/forme — forme (condition − fatigue) plancher avant d'exiger une séance facile.
+r4_form_floor = -30.0
+# R5 : qualité après un verdict santé rouge → bloque.
+# R6 : perte de poids — vitesse max de perte hebdo (% du poids de corps).
+r6_weight_loss_max_pct_per_week = 1.0
+# R7 : déficit — pas de déficit > r7_deficit_max_kcal le jour d'une séance clé (seuil+, > 2 h).
+r7_deficit_max_kcal = 300
+severity_r1_ramp = "warn"
+severity_r2_weekly_load_jump = "warn"
+severity_r3_consecutive_hard = "warn"
+severity_r4_form_floor = "warn"
 severity_r5_quality_after_red = "block"
-severity_r6_long_run_share = "warn"
-severity_r7_consecutive_quality = "warn"
+severity_r6_weight_loss_rate = "warn"
+severity_r7_deficit_on_key_day = "warn"
 
-[chat]
-# Chat avec le coach dans le tableau de bord (voir docs/dashboard/chat.md). Désactivé par
-# défaut : c'est un service distinct (scripts/arc_chat.py, installé par
-# `./install.sh --chat`) facturé au token — clé API dans ~/.config/ai-running-coach/llm.env.
-enabled = false
-# Moteur : "claude" (Claude Agent SDK) | "opencode" (OpenRouter, OpenAI, Mistral, Ollama…)
-# | "mock" (tests). `./install.sh --llm …` écrit backend, model et api_key_env.
-backend = "claude"
-# Modèle. Backend opencode : identifiant fournisseur/modèle, ex. "openrouter/deepseek/deepseek-v4.1-flash".
-model = "claude-sonnet-5-5"
-# Backend opencode + API compatible OpenAI autre qu'OpenRouter.
-base_url = ""
-# NOM de la variable qui porte la clé (llm.env ou environnement), jamais la clé elle-même.
-api_key_env = "ANTHROPIC_API_KEY"
-# Port du service (127.0.0.1 sauf si `listen` est défini) et interface d'écoute.
-port = 8766
-listen = "127.0.0.1"
-# Authentification : "local" (boucle locale uniquement) | "proxy" (identité transmise par le
-# reverse proxy après SSO — Traefik + Authentik/Authelia, voir deploy/chat/traefik/README.md).
-auth = "local"
-# Mode proxy : en-tête d'identité posé par le SSO (Authelia : "Remote-User").
-auth_header = "X-authentik-username"
-# Mode proxy : utilisateurs autorisés (vide = tout utilisateur authentifié) et IP sources
-# admises (Traefik : IP, réseau CIDR ou nom d'hôte — ex. "traefik" pour un conteneur).
-allowed_users = []
-trusted_proxies = ["127.0.0.1"]
-# En-têtes Host acceptés (vide = dérivés de public_url + boucle locale).
-allowed_hosts = []
-# URL publique du tableau de bord, ex. "https://coach.example.com" — requise pour les
-# boutons de notification ntfy.
-public_url = ""
-# Plafond de dépense quotidien du chat (EUR) ; les fournisseurs facturent en USD.
-daily_budget_eur = 2.0
-usd_eur_rate = 0.92
-# Tours d'agent maximum par message, et tours par minute et par utilisateur.
-max_turns = 30
-rate_limit_per_min = 6
-# Attente (s) d'une approbation avant qu'elle ne passe « en attente », et durée de vie (s)
-# d'une proposition en attente.
-approval_wait_s = 600
-approval_ttl_s = 86400
-# Notification ntfy d'approbation : bouton « Ouvrir », boutons « Appliquer / Refuser »
-# (jetons signés à usage unique, durée de vie ntfy_token_ttl_s).
-ntfy_approvals = true
-ntfy_quick_approve = true
-ntfy_token_ttl_s = 1800
-# Délai (s) avant la notification quand la page est ouverte : laisse le temps de
-# répondre à l'écran avant de sonner sur le téléphone.
-ntfy_delay_s = 60
-# Plafond (€) de ce qu'un tour peut dépenser : le reste du budget du jour reste disponible
-# pour une autre conversation ou une approbation tardive. 0 = tout le reste du jour.
-turn_budget_max_eur = 1.0
+[weight_loss]
+# Cadre de la perte de poids (coach-poids). Valeurs personnelles → profil de l'athlète.
+# Déficit quotidien cible par défaut (kcal) et plancher d'énergie disponible (kcal/kg masse maigre/j).
+default_deficit_kcal = 400
+energy_availability_floor = 30
+# Protéines (g/kg/j) pendant un déficit avec entraînement.
+protein_g_per_kg = 1.8
 
-[telegram]
-# Bot Telegram (#174, voir docs/telegram.md) : retours en un geste SANS modèle ni clé d'API
-# (boutons du résumé quotidien : séance faite / pas faite / décalée, RPE, douleur), écrits
-# dans le workspace par la même logique que /log. Désactivé par défaut ; installé par
-# `./install.sh --telegram` (service `scripts/coach-telegram.sh`, interrogation périodique :
-# aucune adresse publique à exposer).
-enabled = false
-# Fichier du jeton du bot (ligne TELEGRAM_BOT_TOKEN=…), HORS dépôt, mode 600 — jamais dans ce TOML.
-token_file = "~/.config/ai-running-coach/telegram.env"
-# Identifiants des chats autorisés (liste blanche). Vide = tout est refusé. Se récupère avec
-# `python3 scripts/arc_telegram.py whoami` (voir docs/telegram.md). Exemple : ["123456789"].
-allowed_chat_ids = []
-# Envoie le résumé de la synchronisation quotidienne (avec ses boutons) sur Telegram, en plus
-# de ntfy s'il est configuré.
-send_summary = true
-# Conversation libre (niveau 2) : relaie le texte libre au service du chat du tableau de bord
-# (mêmes politique, approbations et plafond de dépense). Exige [chat].enabled = true et une clé
-# d'API facturée (docs/mobile.md). false = les retours en un geste seulement.
-chat_bridge = false
-# Durée (s) d'une interrogation longue de l'API Telegram (getUpdates).
-poll_timeout_s = 30
-
-[dashboard]
-# Tableau de bord local (`scripts/dashboard.sh`) : lecture seule, n'écoute que sur
-# 127.0.0.1 — l'adresse n'est volontairement pas configurable. Si le port est pris,
-# les 9 suivants sont essayés.
-port = 8765
-# Fond de carte de la page séance (trace GPS des échantillons FIT). Modèle d'URL de tuiles
-# raster `{z}/{x}/{y}` (`{s}` = sous-domaine a/b/c), en https. La seule ressource externe
-# que le tableau de bord charge en plus des polices : le serveur de tuiles voit la zone
-# affichée, jamais la trace. Vide = aucune tuile, trace seule sur fond uni (hors ligne).
-# Modifier ces clés demande de relancer le tableau de bord (en-tête Content-Security-Policy).
-map_tiles = "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
-map_attribution = "© OpenStreetMap contributors, SRTM · style © OpenTopoMap (CC-BY-SA)"
-
-[elevation]
-# Correction altimétrique par modèle numérique de terrain (#176, scripts/arc_dem.py,
-# docs/elevation.md). DÉSACTIVÉE par défaut : aucune coordonnée ne quitte votre machine.
-#   "off"  — défaut ; la correction n'a lieu que sur demande (`analyze_gpx.py --dem`,
-#            `arc_race_pacing.py --dem`)
-#   "auto" — les GPX de COURSE (itinéraires publics : analyse de parcours, plan de course)
-#            sont corrigés d'office ; repli sur l'altitude du fichier hors ligne (avec avertissement)
-# Fournisseurs : IGN RGE ALTI (Géoplateforme, France métropolitaine) puis Copernicus GLO-90
-# via Open-Meteo (ailleurs). Seules des coordonnées arrondies, amincies, sont envoyées.
-# Valeur invalide = "off" + avertissement.
-dem = "off"
-# Pas d'amincissement des coordonnées envoyées (m, 5 à 500) : un point tous les `step_m`.
-step_m = 50
-# Cache local des altitudes (<workspace>/.arc/dem-cache.json, jamais dans le dépôt).
-cache = true
-
-[privacy]
-# Séances personnelles (`arc_index.py dem-check <séance>`) : une trace d'activité révèle votre
-# domicile. Tant que `false` (défaut), AUCUNE trace de séance n'est envoyée à un service
-# d'altimétrie. `true` = autorise la comparaison altitude enregistrée / MNT (jamais un
-# remplacement), début et fin de trace exclus (`dem_trim_m`). Indépendant de [elevation].dem.
-dem_for_activities = false
-# Mètres retirés au début ET à la fin de chaque trace de séance avant envoi (200 à 5000).
-# Protection PARTIELLE : la trace restante passe souvent encore près de chez vous.
-dem_trim_m = 500
-
-# [pacing.personal] — coefficients de pacing personnels (#188). Section ABSENTE par défaut :
-# écrite par `arc_race_debrief.py --calibrate --apply` après accord explicite de l'athlète,
-# dans config/workspace.user.toml (voir docs/configuration.md). Ne rien décommenter ici.
+[sync]
+# Synchronisation automatique headless (scripts/daily-sync.sh, `claude -p /daily-sync`).
+runner = "claude"
+times = ["07:15", "20:30"]
+lookback_days = 2
+git_autocommit = false

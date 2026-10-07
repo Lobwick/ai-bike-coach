@@ -1,40 +1,22 @@
 # Objectif actif
 
-> Modèle installé par `/coach-setup`. Source de vérité de l'objectif en cours :
-> les quatre agents le lisent avant toute décision. Une seule course à la fois —
-> archivez l'objectif précédent avant d'en écrire un nouveau.
+```arc
+{
+  "type": "objective",
+  "name": "À renseigner",
+  "date": "2027-01-01",
+  "discipline": "route",
+  "priority": "A"
+}
+```
 
-## Course visée
+Source de vérité de l'objectif courant. `discipline` : `route` | `cx` | `poids`. Pour la perte de poids :
+ajoute `target_weight_kg` et `target_date`.
 
-- **Nom** :
-- **Date** :
-- **Distance** :
-- **Dénivelé positif** : <!-- laisser vide sur route -->
-- **Lieu** :
-- **Lien / trace GPX** :
-
-## Objectif de performance
-
-- **Objectif principal** : <!-- finir | temps cible | classement -->
-- **Temps visé** :
-- **Scénario acceptable / scénario noir** :
-
-## Paramètres d'entraînement
-
-- **Semaines restantes** :
-- **Volume hebdomadaire de départ** :
-- **Volume hebdomadaire cible** :
-- **Séances qualité par semaine** :
-- **Lieu d'entraînement par défaut** : <!-- utilisé par le skill weather-forecast -->
-
-## Contraintes connues
-
-- **Indisponibilités** : <!-- vacances, déplacements, examens -->
-- **Courses intermédiaires** :
-- **Limites médicales en cours** :
-
-## Journal des révisions
-
-| Date | Changement | Raison |
-|---|---|---|
-|  |  |  |
+## Détails
+- Épreuve / objectif :
+- Date, lieu :
+- Distance / dénivelé / durée :
+- Objectif de performance :
+- Objectif de poids (si applicable) :
+- Objectifs secondaires :

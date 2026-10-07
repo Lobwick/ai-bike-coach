@@ -5,7 +5,7 @@ vérité unique** : les agents lisent `[coaching].style` puis ce fichier. Rien
 n'est recopié ailleurs, donc rien ne peut diverger.
 
 Ce qui ne rentre pas dans un identifiant — ce qui vous motive, ce qu'il ne faut
-pas commenter — vit dans votre profil (`planning/Runner_Profile.md`, section
+pas commenter — vit dans votre profil (`planning/Athlete_Profile.md`, section
 « Préférences de coaching ») et **prime sur ce catalogue**.
 
 ## `style` — la voix
