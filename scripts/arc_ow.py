@@ -45,6 +45,7 @@ except ImportError:  # pragma: no cover
 
 DEFAULT_PRIORITY = ["garmin", "strava", "whoop", "apple"]
 CALORIE_ORDER = ["whoop", "garmin", "apple", "strava"]  # strava sous-déclare souvent
+RHR_LOCAL_HOURS = (2, 13)   # FC de repos retenue seulement entre 02:00 et 13:00 locales
 START_TOL_S = 180
 DUR_TOL_RATIO = 0.10
 DUR_TOL_ABS_S = 120
@@ -72,6 +73,12 @@ def _local_date(dt, tz):
     if tz and ZoneInfo:
         return dt.astimezone(ZoneInfo(tz)).date().isoformat()
     return dt.date().isoformat()
+
+
+def _local_hour(dt, tz):
+    if tz and ZoneInfo:
+        return dt.astimezone(ZoneInfo(tz)).hour
+    return dt.hour
 
 
 def _rank(source, priority):
@@ -203,9 +210,15 @@ def daily(doc, tz="Europe/Paris", priority=None):
             rs = [x for x in rs if _rank(x.get("source"), priority) == best]
             vals = [x["value"] for x in rs]
             if t == "resting_heart_rate":
-                # les échantillons horaires contiennent des artefacts (jour/nuit) : on prend
-                # le minimum plausible du jour, la médiane serait tirée par les pics.
-                row["resting_hr_bpm"] = min(vals)
+                # Open Wearables émet aussi des « FC de repos » hors du réveil (82-131 bpm vers minuit).
+                # On ne garde que la fenêtre matinale locale ; un jour sans échantillon matinal n'a
+                # PAS de FC de repos (jamais celle d'un artefact), puis on prend le minimum.
+                morning = [x["value"] for x in rs
+                           if RHR_LOCAL_HOURS[0] <= _local_hour(_dt(x["timestamp"]), tz) < RHR_LOCAL_HOURS[1]]
+                if morning:
+                    row["resting_hr_bpm"] = min(morning)
+                else:
+                    row["resting_hr_note"] = "aucun échantillon matinal (artefact écarté)"
             elif t.startswith("heart_rate_variability"):
                 row[t.replace("heart_rate_variability_", "hrv_") + "_ms"] = round(statistics.mean(vals), 1)
             elif t in ("respiratory_rate", "oxygen_saturation"):

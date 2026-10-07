@@ -124,6 +124,16 @@ class TestOpenWearablesV2(unittest.TestCase):
         self.assertTrue(days["2026-10-06"]["energy_missing"])
         self.assertEqual(days["2026-10-06"]["steps"], 9968)
 
+    def test_resting_hr_ignores_non_morning_artifacts(self):
+        d = arc_ow.daily({"records": [
+            {"timestamp": "2026-09-11T22:00:00Z", "type": "resting_heart_rate", "value": 90, "source": "apple"},
+            {"timestamp": "2026-09-08T09:00:00Z", "type": "resting_heart_rate", "value": 40, "source": "apple"},
+            {"timestamp": "2026-09-08T22:00:00Z", "type": "resting_heart_rate", "value": 96, "source": "apple"}]})
+        by = {x["date"]: x for x in d["days"]}
+        self.assertEqual(by["2026-09-08"]["resting_hr_bpm"], 40)
+        self.assertNotIn("resting_hr_bpm", by["2026-09-12"])      # 22 h UTC = minuit local : lendemain, écarté
+        self.assertIn("resting_hr_note", by["2026-09-12"])
+
     def test_hourly_energy_series_ignored_in_daily(self):
         d = arc_ow.daily({"records": [
             {"timestamp": "2026-10-04T22:00:00Z", "type": "basal_energy", "value": 3755.458, "source": "apple"},
