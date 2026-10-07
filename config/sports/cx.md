@@ -19,7 +19,7 @@ sable, bosse. Saison : septembre → février (pré-saison juillet-août).
 | `race` | Course | 40-60 min, facteur 1,0 |
 | `strength` | Renforcement | gainage, force bas du corps, mobilité hanches/dos |
 
-Gabarits Garmin : `cx_race_sim` (relances au rythme d'un tour), `cx_starts` (départs), plus les gabarits
+Gabarits Garmin : `cx_race_sim` (relances au rythme d'un tour), `cx_starts` (départs), `cx_opener` (ouverture à J-2 : 3 départs + 3 relances), `recovery` (dégourdissage la veille d'une course), plus les gabarits
 route (`threshold`, `vo2max`, `endurance`). Le sport Garmin reste `cycling`.
 
 ## Matériel par défaut à lister pour chaque séance / course

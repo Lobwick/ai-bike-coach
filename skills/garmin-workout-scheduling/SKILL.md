@@ -18,7 +18,7 @@ Open Wearables (`openwearables-sync`). Seuls ces outils `garmin` sont utilisés 
 
 ## Construire le `workout_data`
 Ne l'écris pas à la main : `python3 scripts/arc_workout.py template <nom> --duration-s N`
-(`endurance`, `sweet_spot`, `threshold`, `vo2max`, `cx_race_sim`, `cx_starts`) lit le profil
+(`endurance`, `recovery`, `sweet_spot`, `threshold`, `vo2max`, `cx_race_sim`, `cx_starts`, `cx_opener`) lit le profil
 (`ftp_w`, sinon `lthr_bpm`) et sort `{"workout_data": {...}}`. Séance libre :
 `arc_workout.py build --spec spec.json` (voir l'en-tête du script). Contrôle : `arc_workout.py validate`.
 - **Cible de puissance** (`power.zone`, `targetValueOne/Two` en **watts**, bas puis haut) si le FTP est connu ;

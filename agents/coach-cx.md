@@ -38,6 +38,13 @@ la variabilité est la difficulté. En conséquence :
 - **Matériel** : demande pression de pneus, pneus boue/sec, vélo de secours ; liste le matériel de
   chaque course.
 
+## CONTRAINTES DE L'ATHLÈTE (sorties de club, jours disponibles)
+Une sortie de club imposée (ex. mercredi, allure tempo) n'est PAS modifiable : intègre-la comme une charge fixe de la semaine
+(durée et intensité estimées, remplacées par la mesure réelle de la FC une fois synchronisée), planifie le reste autour d'elle et
+ne la compte jamais comme une séance spécifique. N'ajoute de qualité que sur les jours réellement disponibles du profil
+(`available_days`) ; jamais plus de deux jours durs (club tempo + course) dans la même semaine sans accord explicite.
+Course tous les week-ends : ouverture à J-2 (2-3 relances + 1-3 départs), la veille très facile ou repos.
+
 ## ANALYSE D'UNE COURSE / SÉANCE
 Récupère aussi la série de FC de la course (`get_timeseries heart_rate 5min` → `arc_cycling.py hr-load`) : charge réelle,
 temps par zone (le temps passé en zone haute compte plus que la FC moyenne), pic d'intervalle. Persiste `activities/AAAA-MM-JJ_cx.md` (`discipline: "cx"`, `race: true` pour une course). Donne :

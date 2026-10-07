@@ -148,6 +148,25 @@ def template(name, duration_s, ftp=None, lthr=None):
             {"kind": "interval", "duration_s": 220, "description": "Tour à allure de course, 100-108 % FTP",
              **_tgt(ftp, lthr, 1.04, .04, (1.00, 1.04))},
             easy(60, "Souple — équivalent d'une zone de récup / technique")]}, cd]
+    elif name == "recovery":
+        nm = "Dégourdissage Z1"
+        steps = [{"kind": "interval", "duration_s": duration_s,
+                  "description": "Très facile, cadence souple, jambes libres : veille de course ou récupération",
+                  **_tgt(ftp, lthr, .50, .08, (.60, .75))}]
+    elif name == "cx_opener":
+        nm = "CX ouverture de course"
+        core = 3 * (15 + 135) + 3 * (20 + 130)           # 900 s : 3 départs + 3 relances
+        wu_s = max(duration_s - core - c, 600)
+        wu["duration_s"] = wu_s
+        steps = [wu,
+                 {"repeat": 3, "steps": [
+                     {"kind": "interval", "duration_s": 15, "description": "Départ : sprint à fond 15 s",
+                      **_tgt(ftp, lthr, 2.0, .3, None)},
+                     easy(135, "Récupération complète, souple")]},
+                 {"repeat": 3, "steps": [
+                     {"kind": "interval", "duration_s": 20, "description": "Relance de sortie de virage, ≥ 150 % FTP",
+                      **_tgt(ftp, lthr, 1.6, .15, None)},
+                     easy(130, "Récupération complète, souple")]}, cd]
     elif name == "cx_starts":
         nm = "CX départs"
         steps = [wu, {"repeat": 6, "steps": [
@@ -160,7 +179,7 @@ def template(name, duration_s, ftp=None, lthr=None):
     return spec
 
 
-TEMPLATES = ["endurance", "sweet_spot", "threshold", "vo2max", "cx_race_sim", "cx_starts"]
+TEMPLATES = ["endurance", "recovery", "sweet_spot", "threshold", "vo2max", "cx_race_sim", "cx_starts", "cx_opener"]
 
 
 def validate(dto):
