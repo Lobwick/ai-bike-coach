@@ -1,0 +1,36 @@
+{
+ "records": [
+  {
+   "date": "2026-10-05",
+   "steps": 0,
+   "distance_meters": null,
+   "active_calories_kcal": 1148,
+   "total_calories_kcal": 3676.542,
+   "active_minutes": null,
+   "heart_rate": {
+    "avg_bpm": 150,
+    "max_bpm": 174,
+    "min_bpm": 103
+   },
+   "intensity_minutes": {
+    "light": 2,
+    "moderate": 13,
+    "vigorous": 39
+   },
+   "elevation_meters": 234,
+   "source": "apple"
+  },
+  {
+   "date": "2026-10-06",
+   "steps": 9968,
+   "distance_meters": 6734.745,
+   "active_calories_kcal": 0,
+   "total_calories_kcal": 0,
+   "active_minutes": 34,
+   "heart_rate": null,
+   "intensity_minutes": null,
+   "elevation_meters": null,
+   "source": "apple"
+  }
+ ]
+}

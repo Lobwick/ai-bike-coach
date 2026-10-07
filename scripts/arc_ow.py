@@ -9,6 +9,8 @@ rend un jeu de séances dédoublonné que les agents persistent ensuite en Markd
     python3 scripts/arc_ow.py workouts  < workout_events.json   # séances dédoublonnées
     python3 scripts/arc_ow.py daily     < timeseries.json       # FC repos / HRV / poids par jour
     python3 scripts/arc_ow.py sleep     < sleep_summary.json    # une nuit par date
+    python3 scripts/arc_ow.py activity  < activity_summary.json # résumé quotidien (0 = absent)
+    python3 scripts/arc_ow.py hr --start ISO --end ISO < hr_timeseries.json   # FC d'une séance, dédoublonnée
 
 Entrée : la réponse JSON brute de l'outil MCP (ou sa liste `records`).
 Options : --tz Europe/Paris   --priority garmin,strava,whoop,apple
@@ -24,6 +26,11 @@ Règles (« approximations du projet », dites telles quelles) :
 - Les calories divergent d'une source à l'autre : toutes sont conservées dans
   `calories_by_source`, jamais sommées ; `calories_kcal` suit `CALORIE_ORDER`.
 - Une mesure absente reste absente (clé omise), jamais 0.
+- Les doublons sont devenus rares côté Open Wearables mais pas nuls : ce passage est idempotent,
+  sans effet quand il n'y a rien à fusionner. Le lancer toujours.
+- Résumé quotidien : `0` kcal / pas / distance = donnée ABSENTE (jour sans synchronisation), jamais une
+  vraie valeur nulle. Les séries horaires `active_energy`/`basal_energy` ne servent pas à reconstituer un
+  total (valeurs cumulées à la synchronisation, doublons) : utiliser `total_kcal` du résumé quotidien.
 """
 import json
 import statistics
@@ -201,6 +208,11 @@ def daily(doc, tz="Europe/Paris", priority=None):
                 row["resting_hr_bpm"] = min(vals)
             elif t.startswith("heart_rate_variability"):
                 row[t.replace("heart_rate_variability_", "hrv_") + "_ms"] = round(statistics.mean(vals), 1)
+            elif t in ("respiratory_rate", "oxygen_saturation"):
+                row[{"respiratory_rate": "respiratory_rate_brpm", "oxygen_saturation": "spo2_pct"}[t]] = \
+                    round(statistics.mean(vals), 1)
+            elif t in ("active_energy", "basal_energy"):
+                continue  # séries horaires non fiables : voir `activity`
             elif t in ("weight", "body_fat_percentage", "body_mass_index"):
                 last = max(rs, key=lambda x: x["timestamp"])["value"]
                 row[{"weight": "weight_kg", "body_fat_percentage": "body_fat_pct",
@@ -212,11 +224,56 @@ def daily(doc, tz="Europe/Paris", priority=None):
     return {"days": out}
 
 
+def activity(doc, tz="Europe/Paris", priority=None):
+    """Résumé quotidien : les valeurs nulles d'énergie/pas/distance sont ABSENTES (omises)."""
+    priority = priority or DEFAULT_PRIORITY
+    by = {}
+    for r in _records(doc):
+        by.setdefault(r["date"], []).append(r)
+    days = []
+    for date in sorted(by):
+        r = sorted(by[date], key=lambda x: _rank(x.get("source"), priority))[0]
+        d = {"date": date, "source": r.get("source")}
+        for k, key in (("steps", "steps"), ("distance_meters", "distance_m"),
+                       ("active_calories_kcal", "active_kcal"), ("total_calories_kcal", "total_kcal"),
+                       ("active_minutes", "active_min"), ("elevation_meters", "elevation_gain_m")):
+            if r.get(k):
+                d[key] = round(r[k], 1) if isinstance(r[k], float) else r[k]
+        hr = r.get("heart_rate") or {}
+        for k in ("avg", "max", "min"):
+            if hr.get(f"{k}_bpm"):
+                d[f"hr_{k}_bpm"] = hr[f"{k}_bpm"]
+        im = r.get("intensity_minutes") or {}
+        if any(im.values()):
+            d["intensity_minutes"] = {k: v for k, v in im.items() if v}
+        if "total_kcal" not in d:
+            d["energy_missing"] = True
+        days.append(d)
+    return {"days": days}
+
+
+def hr_series(doc, start, end, priority=None):
+    """Échantillons de FC d'une fenêtre, un point par horodatage (moyenne des enregistrements
+    simultanés, y compris d'une même source), triés. Résolution estimée par la médiane des écarts."""
+    s, e = _dt(start), _dt(end)
+    buckets = defaultdict(list)
+    for r in _records(doc):
+        if r.get("type") != "heart_rate":
+            continue
+        t = _dt(r["timestamp"])
+        if s <= t <= e:
+            buckets[t].append(r["value"])
+    pts = [{"t": t.isoformat(), "bpm": round(sum(v) / len(v), 1)} for t, v in sorted(buckets.items())]
+    gaps = sorted((_dt(b["t"]) - _dt(a["t"])).total_seconds() for a, b in zip(pts, pts[1:]))
+    return {"samples": pts, "n": len(pts), "resolution_s": int(gaps[len(gaps) // 2]) if gaps else None,
+            "note": "FC moyennée par intervalle : la valeur maximale d'un intervalle sous-estime le vrai pic"}
+
+
 def main(argv):
-    if len(argv) < 2 or argv[1] not in ("workouts", "sleep", "daily"):
+    if len(argv) < 2 or argv[1] not in ("workouts", "sleep", "daily", "activity", "hr"):
         print(__doc__)
         return 2
-    tz, prio = "Europe/Paris", None
+    tz, prio, win = "Europe/Paris", None, {}
     args = argv[2:]
     while args:
         a = args.pop(0)
@@ -224,10 +281,15 @@ def main(argv):
             tz = args.pop(0)
         elif a == "--priority":
             prio = args.pop(0).split(",")
+        elif a in ("--start", "--end"):
+            win[a[2:]] = args.pop(0)
         elif a == "--file":
             sys.stdin = open(args.pop(0), encoding="utf-8")
     doc = json.load(sys.stdin)
-    fn = {"workouts": workouts, "sleep": sleep, "daily": daily}[argv[1]]
+    if argv[1] == "hr":
+        print(json.dumps(hr_series(doc, win["start"], win["end"], prio), ensure_ascii=False, indent=2))
+        return 0
+    fn = {"workouts": workouts, "sleep": sleep, "daily": daily, "activity": activity}[argv[1]]
     print(json.dumps(fn(doc, tz, prio), ensure_ascii=False, indent=2))
     return 0
 

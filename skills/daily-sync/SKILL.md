@@ -11,14 +11,14 @@ Aucune question, aucun push Garmin, aucune écriture externe. Si une décision e
 1. **Config** : `config/workspace.toml` + `.user.toml` ; `[sync].lookback_days` (défaut 2), `[health].morning_check`.
 2. **Dates manquantes** : pour chacune des `lookback_days` dernières dates (aujourd'hui inclus), regarde si
    `activities/` et `medical/AAAA-MM-JJ_health.md` existent. Ne récupère que ce qui manque.
-3. **Lecture** (skill `openwearables-sync`) : `get_workout_events` → `arc_ow.py workouts` ;
+3. **Lecture** (skill `openwearables-sync`, FC détaillée de chaque nouvelle séance incluse, résumé quotidien `activity` pour la dépense) : `get_workout_events` → `arc_ow.py workouts` ;
    `get_sleep_summary` → `arc_ow.py sleep` ; `get_timeseries` (FC de repos, HRV, poids) → `arc_ow.py daily`.
    Écris chaque fichier immédiatement ; valide avec `arc_contract.py --validate`.
 3b. **Glycémie** (si `[glucose].enabled`, skill `nightscout-glucose`, lecture seule) : pour chaque séance nouvelle,
    `get_glucose_by_date_range` + `get_treatments_by_date` → `arc_glucose.py session` → clés `glucose_*`/`hypo_events` ;
    bilan du jour (`get_daily_glucose_stats`) dans `medical/…_health.md`. Aucune écriture Nightscout, aucune dose.
    Hypoglycémie < 54 ou nocturne : ligne `Alerte :` « contacter l'équipe de diabétologie si répété ».
-4. **Charge** : `arc_cycling.py session` par séance (puissance > FC > RPE) ; sans méthode possible, pas de `load`
+4. **Charge** : par séance, puissance > série de FC (`arc_cycling.py hr-load`) > FC moyenne (`session`) > RPE ; sans méthode possible, pas de `load`
    — note « RPE manquant » dans le résumé (jamais de question).
 5. **Bilan matinal** selon `[health].morning_check` : délègue à `medical` s'il est joignable, sinon applique
    toi-même ses règles ; écris `verdict` dans `medical/AAAA-MM-JJ_health.md`.

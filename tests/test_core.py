@@ -111,6 +111,63 @@ class TestOpenWearables(unittest.TestCase):
         self.assertEqual(s["nights"][0]["source"], "garmin")
 
 
+class TestOpenWearablesV2(unittest.TestCase):
+    def load(self, name):
+        with open(os.path.join(HERE, "data", name)) as fh:
+            return json.load(fh)
+
+    def test_activity_zero_is_missing(self):
+        days = {d["date"]: d for d in arc_ow.activity(self.load("ow_activity.json"))["days"]}
+        self.assertEqual(days["2026-10-05"]["total_kcal"], 3676.5)
+        self.assertNotIn("steps", days["2026-10-05"])           # 0 pas = absent
+        self.assertNotIn("total_kcal", days["2026-10-06"])
+        self.assertTrue(days["2026-10-06"]["energy_missing"])
+        self.assertEqual(days["2026-10-06"]["steps"], 9968)
+
+    def test_hourly_energy_series_ignored_in_daily(self):
+        d = arc_ow.daily({"records": [
+            {"timestamp": "2026-10-04T22:00:00Z", "type": "basal_energy", "value": 3755.458, "source": "apple"},
+            {"timestamp": "2026-10-04T08:00:00Z", "type": "respiratory_rate", "value": 17.754, "source": "apple"},
+            {"timestamp": "2026-10-04T08:00:00Z", "type": "oxygen_saturation", "value": 95.125, "source": "apple"}]})
+        row = d["days"][0] if len(d["days"]) == 1 else [x for x in d["days"] if x["date"] == "2026-10-04"][0]
+        self.assertNotIn("basal_energy", row)
+        self.assertEqual(row["respiratory_rate_brpm"], 17.8)
+        self.assertEqual(row["spo2_pct"], 95.1)
+
+    def test_hr_series_merges_simultaneous_samples(self):
+        ser = arc_ow.hr_series(self.load("ow_hr.json"), "2026-10-05T10:10:35Z", "2026-10-05T11:57:47Z")
+        self.assertEqual(ser["resolution_s"], 300)
+        self.assertEqual(ser["n"], len({s["t"] for s in ser["samples"]}))   # un point par horodatage
+
+    def test_hr_load_close_to_avg_hr_on_steady_ride_and_has_zones(self):
+        ser = arc_ow.hr_series(self.load("ow_hr.json"), "2026-10-05T10:10:35Z", "2026-10-05T11:57:47Z")
+        prof = {"hr_rest_bpm": 50, "hr_max_bpm": 192, "lthr_bpm": 170}
+        r = arc_cycling.hr_series_load(ser["samples"], prof, 300)
+        self.assertEqual(r["load_method"], "hr_series")
+        avg, _ = arc_cycling.session_load(6432, prof, avg_hr=150)
+        self.assertAlmostEqual(r["load"], avg, delta=10)
+        self.assertGreater(sum(r["time_in_zone_min"].values()), 90)
+        self.assertEqual(arc_contract.validate_obj(
+            {"type": "activity", "date": "2026-10-05", "discipline": "route", "duration_s": 6432,
+             "load": r["load"], "load_method": r["load_method"], "time_in_zone_min": r["time_in_zone_min"],
+             "easy_share_pct": r["easy_share_pct"], "hr_drift_pct": r["hr_drift_pct"]}), [])
+
+    def test_intervals_load_higher_than_avg_hr(self):
+        # 6 × (2 min à 180 / 3 min à 100) : la FC moyenne écrase l'effort, la série le voit
+        pts, t = [], dt.datetime(2026, 10, 5, 10, 0)
+        for _ in range(6):
+            for bpm, n in ((180, 2), (100, 3)):
+                for _ in range(n):
+                    pts.append({"t": t.isoformat(), "bpm": bpm}); t += dt.timedelta(minutes=1)
+        prof = {"hr_rest_bpm": 50, "hr_max_bpm": 192, "lthr_bpm": 170}
+        series = arc_cycling.hr_series_load(pts, prof, 60)["load"]
+        avg, _ = arc_cycling.session_load(len(pts) * 60, prof, avg_hr=sum(p["bpm"] for p in pts) / len(pts))
+        self.assertGreater(series, avg)
+
+    def test_hr_load_refuses_without_profile(self):
+        self.assertIsNone(arc_cycling.hr_series_load([{"t": "2026-10-05T10:00:00", "bpm": 120}] * 5, {}, 60))
+
+
 class TestLoad(unittest.TestCase):
     def test_power_load_one_hour_at_ftp_is_100(self):
         load, m = arc_cycling.session_load(3600, {"ftp_w": 250}, np_w=250)

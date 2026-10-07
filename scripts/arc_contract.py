@@ -18,7 +18,7 @@ DISCIPLINES = {"route", "cx", "poids", "strength", "other"}
 INTENSITIES = {"rest", "recovery", "endurance", "tempo", "threshold", "vo2max",
                "anaerobic", "race", "strength"}
 VERDICTS = {"green", "amber", "red"}
-LOAD_METHODS = {"power", "hr", "trimp", "rpe"}
+LOAD_METHODS = {"power", "hr_series", "hr", "trimp", "rpe"}
 OUTCOMES = {"proposed", "applied", "superseded", "declined"}
 
 # type -> (clés obligatoires, validateurs de champs {clé: (types, enum|None)})
@@ -38,7 +38,9 @@ SCHEMAS = {
         "glucose_max_mgdl": ((int, float), None), "glucose_end_mgdl": ((int, float), None),
         "glucose_post_min_mgdl": ((int, float), None), "hypo_events": (int, None),
         "carbs_logged_g": ((int, float), None), "carbs_before_g": ((int, float), None),
-        "loop_override": (str, None),
+        "loop_override": (str, None), "time_in_zone_min": (dict, None),
+        "easy_share_pct": ((int, float), None), "hr_drift_pct": ((int, float), None),
+        "peak_interval_hr_bpm": ((int, float), None),
     }),
     "health": (["date"], {
         "date": (str, None), "resting_hr_bpm": ((int, float), None),
@@ -50,7 +52,9 @@ SCHEMAS = {
         "glucose_avg_mgdl": ((int, float), None), "tir_pct": ((int, float), None),
         "time_below_pct": ((int, float), None), "time_above_pct": ((int, float), None),
         "glucose_cv_pct": ((int, float), None), "lows_below_54": (int, None),
-        "nocturnal_low": (bool, None),
+        "nocturnal_low": (bool, None), "respiratory_rate_brpm": ((int, float), None),
+        "spo2_pct": ((int, float), None), "steps": ((int, float), None),
+        "total_kcal": ((int, float), None), "active_kcal": ((int, float), None),
     }),
     "nutrition": (["date"], {
         "date": (str, None), "intake_kcal": ((int, float), None),

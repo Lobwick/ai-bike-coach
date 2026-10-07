@@ -24,9 +24,10 @@ planifient, analysent, et persistent tout en fichiers Markdown (français par d�
 - **Garmin = écriture seule** : `schedule_workouts`, `schedule_week`, `upload_workout` (+ vérification
   `get_scheduled_workouts`/`get_workout_by_id` de ce qu'on a poussé). Aucun outil de lecture `garmin`
   n'est exposé (`.mcp.json`) ni utilisé. Jamais de push sans « oui » explicite, jamais en headless.
-- Open Wearables **duplique** les séances (Apple + Strava + Whoop + Garmin) : tout passe par
-  `scripts/arc_ow.py` (dédoublonnage, enveloppes, calories par source). Pas de puissance dans les
-  données : la charge vient de la puissance **déclarée** > FC > RPE, méthode toujours tracée.
+- Open Wearables agrège plusieurs sources (Apple, Strava, Whoop, Garmin…) : les doublons sont devenus rares mais pas
+  nuls, tout passe donc par `scripts/arc_ow.py` (idempotent : dédoublonnage, enveloppes, calories par source, `0` =
+  absent, FC d'une séance). Pas de puissance dans les données : la charge vient de la puissance **déclarée** > **série de
+  FC** > FC moyenne > RPE, méthode toujours tracée.
 
 ## Configuration
 
@@ -84,8 +85,8 @@ omise. Valider : `python3 scripts/arc_contract.py --validate <fichier>`.
 
 | Script | Rôle |
 |---|---|
-| `arc_ow.py` | Dédoublonne séances / sommeil / timeseries Open Wearables. |
-| `arc_cycling.py` | Zones de puissance et FC, charge d'une séance, condition / fatigue / forme. |
+| `arc_ow.py` | Normalise Open Wearables : séances dédoublonnées, sommeil, timeseries, résumé quotidien, FC d'une séance. |
+| `arc_cycling.py` | Zones de puissance et FC, charge d'une séance (dont depuis la série de FC), condition / fatigue / forme. |
 | `arc_glucose.py` | Contrôle glycémique avant séance, analyse pendant/après, bilan du jour (Nightscout). |
 | `arc_override.py` | Analyse des overrides Loop et propositions bornées (lecture seule, rien n'est appliqué). |
 | `arc_weight.py` | Tendance de poids, plan de perte, ravitaillement sur le vélo, énergie disponible, BMR. |

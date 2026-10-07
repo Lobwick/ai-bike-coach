@@ -4,6 +4,7 @@
     python3 scripts/arc_cycling.py zones   [--profile planning/Athlete_Profile.md]
     python3 scripts/arc_cycling.py load    [--days 90] [--until AAAA-MM-JJ] [--workspace .]
     python3 scripts/arc_cycling.py session --duration-s 3600 [--np-w 220 | --avg-hr 150 | --rpe 6]
+    python3 scripts/arc_cycling.py hr-load --timeseries ts.json --start ISO --end ISO
 
 Vocabulaire GÉNÉRIQUE (comme dans tout le projet) : *charge* (par séance), *condition*
 (moyenne exponentielle 42 j), *fatigue* (7 j), *forme* = condition − fatigue. On ne
@@ -11,7 +12,9 @@ reprend pas les sigles déposés TSS/CTL/ATL/TSB dans les fichiers ni les répon
 
 Charge d'une séance, par ordre de précédence — la méthode est toujours tracée :
   power : 100 × h × (NP/FTP)²                          (FTP au profil)
-  hr    : 100 × TRIMP(séance) / TRIMP(1 h au seuil)    (FC moy., FC repos/max, LTHR)
+  hr_series : 100 × Σ TRIMP(intervalle) / TRIMP(1 h au seuil)  (série de FC Open Wearables, la meilleure
+              méthode sans puissance : capte les intervalles que la FC moyenne écrase)
+  hr    : même formule sur la FC MOYENNE de la séance (repli quand la série manque)
   rpe   : 100 × h × IF(RPE)²                           (table ci-dessous)
 Aucune méthode possible → pas de charge (jamais 0).  Tous les barèmes sont des
 « approximations du projet », pas des mesures de laboratoire. Une FC moyenne
@@ -93,6 +96,39 @@ def session_load(duration_s, profile=None, np_w=None, avg_power_w=None,
         if f:
             return round(100 * h * f * f, 1), "rpe"
     return None, None
+
+
+def hr_series_load(samples, profile, resolution_s=None):
+    """samples : [{"t": ISO, "bpm": x}] (sortie de `arc_ow.py hr`). Retourne un dict ou None."""
+    p = profile or {}
+    if len(samples) < 3 or not (p.get("hr_rest_bpm") and p.get("hr_max_bpm")):
+        return None
+    rest, mx, sex = p["hr_rest_bpm"], p["hr_max_bpm"], p.get("sex", "m")
+    lthr = p.get("lthr_bpm") or estimate_lthr(rest, mx)
+    ref = trimp(lthr, rest, mx, 60, sex)
+    if not resolution_s:
+        ts = [dt.datetime.fromisoformat(s["t"]) for s in samples]
+        gaps = sorted((b - a).total_seconds() for a, b in zip(ts, ts[1:]))
+        resolution_s = gaps[len(gaps) // 2]
+    minutes = resolution_s / 60.0
+    total, zones = 0.0, {}
+    for s in samples:
+        total += trimp(s["bpm"], rest, mx, minutes, sex)
+        z = next((n for n, lo, hi in HR_ZONES if s["bpm"] >= lo * lthr and (hi is None or s["bpm"] < hi * lthr)), "Z1")
+        zones[z] = zones.get(z, 0) + minutes
+    half = len(samples) // 2
+    a1 = sum(s["bpm"] for s in samples[:half]) / half
+    a2 = sum(s["bpm"] for s in samples[half:]) / (len(samples) - half)
+    easy = sum(v for z, v in zones.items() if z in ("Z1", "Z2"))
+    return {"load": round(100 * total / ref, 1), "load_method": "hr_series",
+            "avg_hr_bpm": round(sum(s["bpm"] for s in samples) / len(samples)),
+            "peak_interval_hr_bpm": round(max(s["bpm"] for s in samples)),
+            "time_in_zone_min": {k: round(v) for k, v in sorted(zones.items())},
+            "easy_share_pct": round(100 * easy / sum(zones.values())),
+            "hr_drift_pct": round(100 * (a2 - a1) / a1, 1),
+            "lthr_bpm_used": round(lthr), "lthr_is_estimate": not p.get("lthr_bpm"),
+            "resolution_s": int(resolution_s), "n": len(samples),
+            "note": "dérive = 2e moitié vs 1re ; non interprétable sur un parcours vallonné ou des intervalles"}
 
 
 def planned_load(duration_s, intensity):
@@ -204,6 +240,16 @@ def main(argv):
             out["error"] = "ni ftp_w ni lthr_bpm au profil — ne rien inventer, les demander"
         print(json.dumps(out, ensure_ascii=False, indent=2))
         return 0 if "error" not in out else 1
+    if cmd == "hr-load":
+        import arc_ow
+        prof = read_profile(os.path.join(root, "planning/Athlete_Profile.md"))
+        with open(opt["timeseries"], encoding="utf-8") as fh:
+            ser = arc_ow.hr_series(json.load(fh), opt["start"], opt["end"])
+        res = hr_series_load(ser["samples"], prof, ser["resolution_s"])
+        if res is None:
+            res = {"error": "série trop courte ou profil sans FC repos/max : repli sur la FC moyenne (session) ou le RPE"}
+        print(json.dumps(res, ensure_ascii=False, indent=2))
+        return 1 if "error" in res else 0
     if cmd == "session":
         prof = read_profile(os.path.join(root, "planning/Athlete_Profile.md"))
         load, method = session_load(

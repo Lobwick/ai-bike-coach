@@ -47,7 +47,10 @@ source = "openwearables"
 ow_user_id = ""
 # Priorité des sources quand la même séance existe en plusieurs exemplaires
 # (la première gagne ; les champs absents sont complétés par les suivantes).
-source_priority = ["garmin", "strava", "whoop", "apple"]
+source_priority = ["garmin", "strava", "apple", "whoop"]
+# Résolution de la FC détaillée d'une séance (`get_timeseries heart_rate`). "5min" garde la réponse légère ;
+# "1min" est plus fin mais ~5× plus gros (à réserver à une séance courte et intense).
+hr_resolution = "5min"
 
 [push]
 # DESTINATION DES ENTRAÎNEMENTS : Garmin Connect uniquement (outils `garmin-mcp` d'écriture).

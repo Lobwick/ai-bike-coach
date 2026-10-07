@@ -25,7 +25,10 @@ de conflit, la santé gagne, puis la qualité des séances clés, puis le poids.
    on remonte l'apport et on oriente vers un professionnel de santé (avec `medical` s'il est joignable).
 5. **Poids cible** : IMC cible < 18,5 ou projet manifestement extrême → ne pas planifier, orienter
    vers un médecin.
-6. **Tendance, pas pesée du jour** : `get_timeseries(types=["weight","body_fat_percentage"])` →
+6. **Dépense du jour** : `get_activity_summary` → `arc_ow.py activity` → `total_kcal` (Apple/Garmin) quand il est présent ;
+   un jour `energy_missing` n'a pas de dépense connue : ne l'estime pas à l'aveugle, dis-le. Ne reconstitue jamais le total
+   avec les séries horaires `active_energy`/`basal_energy`.
+6bis. **Tendance, pas pesée du jour** : `get_timeseries(types=["weight","body_fat_percentage"])` →
    `arc_ow.py daily` → `arc_weight.py trend`. Une pesée isolée ne déclenche jamais une décision. La masse
    grasse des balances/montres est une estimation grossière : donne-la comme telle.
 7. **Signaux d'arrêt** — remonter l'apport, jamais forcer : HRV en baisse durable, FC de repos haute,
@@ -75,10 +78,12 @@ Lire `config/workspace.toml`, puis `config/workspace.user.toml` (prime, clé par
   `get_hrv_data`, `get_training_readiness`…). Le serveur `garmin` ne sert qu'à **pousser des
   entraînements** : `schedule_workouts`, `schedule_week`, `upload_workout`, `get_scheduled_workouts`,
   `get_workout_by_id`, `unschedule_workout(s)`, `delete_workout`, `create_strength_workout`.
-- **Doublons** : Open Wearables agrège plusieurs sources, la même sortie y figure 2 à 4 fois.
-  Passe TOUJOURS `get_workout_events` dans `python3 scripts/arc_ow.py workouts` (stdin) avant de
-  persister ; idem `get_timeseries` → `arc_ow.py daily`, `get_sleep_summary` → `arc_ow.py sleep`.
-  Une `envelope` (`counted: false`) est listée, jamais additionnée.
+- **Quel outil pour quoi** (détail : skill `openwearables-sync`) : séances `get_workout_events` → `arc_ow.py workouts` ;
+  FC détaillée d'une séance `get_timeseries(["heart_rate"], "5min")` → `arc_cycling.py hr-load` ; sommeil → `arc_ow.py sleep` ;
+  repos/HRV/respiration/SpO₂/poids `get_timeseries` → `arc_ow.py daily` ; dépense/pas du jour `get_activity_summary` →
+  `arc_ow.py activity`. Les doublons sont devenus rares, pas nuls : passe toujours par ces scripts (idempotents). Une `envelope`
+  (`counted: false`) est listée, jamais additionnée. Un `0` d'énergie/pas/distance dans le résumé quotidien = donnée ABSENTE ;
+  n'additionne jamais les séries horaires d'énergie.
 - **Limites à dire, jamais à combler** : pas de puissance ni de NP dans les séances Open Wearables
   (sauf si l'athlète les déclare), `avg_pace_sec_per_km` n'a aucun sens à vélo (ignorée), les
   calories divergent selon la source (toutes conservées, jamais sommées), pas de FC de
@@ -86,8 +91,9 @@ Lire `config/workspace.toml`, puis `config/workspace.user.toml` (prime, clé par
 - **Fraîcheur** : avant tout appel, regarde si le fichier du jour existe déjà dans `activities/`,
   `medical/` ; ne récupère que les dates manquantes. Après CHAQUE récupération, persiste
   immédiatement le Markdown (`YYYY-MM-DD_<type>.md`) — jamais de JSON brut dans le chat.
-- **Charge d'une séance** : `python3 scripts/arc_cycling.py session --duration-s … [--np-w|--avg-hr|--rpe]`
-  (puissance > FC > RPE). Écris `load` + `load_method`. Aucune méthode possible → omets `load` et
+- **Charge d'une séance** : puissance déclarée > série de FC (`arc_cycling.py hr-load --timeseries … --start … --end …`,
+  donne aussi `time_in_zone_min`, `easy_share_pct`, `hr_drift_pct`) > FC moyenne (`session --avg-hr`) > RPE. Écris `load` +
+  `load_method` (+ `time_in_zone_min`). Pas de série ni de profil FC repos/max → repli, et dis la méthode. Aucune méthode possible → omets `load` et
   demande le RPE à l'athlète en interactif (jamais en headless).
 
 ### GLYCÉMIE (Nightscout) — seulement si `[glucose].enabled = true`

@@ -1,0 +1,312 @@
+{
+ "records": [
+  {
+   "timestamp": "2026-10-05T10:10:00Z",
+   "type": "heart_rate",
+   "value": 111.27,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:10:00Z",
+   "type": "heart_rate",
+   "value": 111,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:15:00Z",
+   "type": "heart_rate",
+   "value": 138.14,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:15:00Z",
+   "type": "heart_rate",
+   "value": 134,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:20:00Z",
+   "type": "heart_rate",
+   "value": 155.86,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:20:00Z",
+   "type": "heart_rate",
+   "value": 150,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:25:00Z",
+   "type": "heart_rate",
+   "value": 151.54,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:25:00Z",
+   "type": "heart_rate",
+   "value": 152.5,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:30:00Z",
+   "type": "heart_rate",
+   "value": 149.6,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:30:00Z",
+   "type": "heart_rate",
+   "value": 149,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:35:00Z",
+   "type": "heart_rate",
+   "value": 147.41,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:35:00Z",
+   "type": "heart_rate",
+   "value": 150,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:40:00Z",
+   "type": "heart_rate",
+   "value": 147.54,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:40:00Z",
+   "type": "heart_rate",
+   "value": 146.33,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:45:00Z",
+   "type": "heart_rate",
+   "value": 159.42,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:45:00Z",
+   "type": "heart_rate",
+   "value": 160.5,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:50:00Z",
+   "type": "heart_rate",
+   "value": 157.44,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:50:00Z",
+   "type": "heart_rate",
+   "value": 156.67,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:55:00Z",
+   "type": "heart_rate",
+   "value": 164.5,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T10:55:00Z",
+   "type": "heart_rate",
+   "value": 159,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:00:00Z",
+   "type": "heart_rate",
+   "value": 155.06,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:00:00Z",
+   "type": "heart_rate",
+   "value": 160,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:05:00Z",
+   "type": "heart_rate",
+   "value": 157.63,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:05:00Z",
+   "type": "heart_rate",
+   "value": 163,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:10:00Z",
+   "type": "heart_rate",
+   "value": 150.82,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:10:00Z",
+   "type": "heart_rate",
+   "value": 146.67,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:15:00Z",
+   "type": "heart_rate",
+   "value": 142.48,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:15:00Z",
+   "type": "heart_rate",
+   "value": 145,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:20:00Z",
+   "type": "heart_rate",
+   "value": 144.7,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:20:00Z",
+   "type": "heart_rate",
+   "value": 136,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:25:00Z",
+   "type": "heart_rate",
+   "value": 139.5,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:25:00Z",
+   "type": "heart_rate",
+   "value": 139,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:30:00Z",
+   "type": "heart_rate",
+   "value": 143.06,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:30:00Z",
+   "type": "heart_rate",
+   "value": 145,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:35:00Z",
+   "type": "heart_rate",
+   "value": 153.76,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:35:00Z",
+   "type": "heart_rate",
+   "value": 150,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:40:00Z",
+   "type": "heart_rate",
+   "value": 160.64,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:40:00Z",
+   "type": "heart_rate",
+   "value": 161,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:45:00Z",
+   "type": "heart_rate",
+   "value": 161.3,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:45:00Z",
+   "type": "heart_rate",
+   "value": 160.5,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:50:00Z",
+   "type": "heart_rate",
+   "value": 156.24,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:50:00Z",
+   "type": "heart_rate",
+   "value": 157.67,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:55:00Z",
+   "type": "heart_rate",
+   "value": 156.78,
+   "unit": "bpm",
+   "source": "apple"
+  },
+  {
+   "timestamp": "2026-10-05T11:55:00Z",
+   "type": "heart_rate",
+   "value": 156,
+   "unit": "bpm",
+   "source": "apple"
+  }
+ ]
+}

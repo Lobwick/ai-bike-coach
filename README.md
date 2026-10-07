@@ -28,9 +28,10 @@ cyclo-cross avec course dimanche », « je veux perdre 5 kg d'ici février sans 
 
 ## Limites connues (dites, jamais comblées)
 
-- Les séances Open Wearables n'ont **pas de puissance** : la charge vient de la FC puis du RPE, sauf puissance
-  déclarée. Plus le profil (FTP, LTHR, FC max/repos) est complet, meilleure est l'estimation.
-- Les **doublons** entre sources sont éliminés par `arc_ow.py` ; une séance englobée par un bloc plus long
+- Les séances Open Wearables n'ont **pas de puissance** : la charge vient de la série de FC (la meilleure option, FC repos/max
+  requises), puis de la FC moyenne, puis du RPE, sauf puissance déclarée. Les séries d'énergie horaires ne sont pas fiables : seul le total
+  quotidien l'est, et un `0` y signifie « absent ». Plus le profil (FTP, LTHR, FC max/repos) est complet, meilleure est l'estimation.
+- Les **doublons** entre sources (devenus rares) sont éliminés par `arc_ow.py` ; une séance englobée par un bloc plus long
   (ex. fenêtre Whoop couvrant deux sorties) est listée mais non comptée.
 - Les **cibles de puissance** Garmin (`power.zone`) doivent être vérifiées au premier push.
 - Seuils de garde-fou et zones sont des « approximations du projet », pas un avis médical.
