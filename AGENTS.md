@@ -96,7 +96,8 @@ omise. Valider : `python3 scripts/arc_contract.py --validate <fichier>`.
 | `arc_contract.py` | Valide les blocs `arc`. |
 | `coach_config.py` · `coach_doctor.py` | Configuration · diagnostic. |
 | `arc_serve.py` · `dashboard.sh` | **Tableau de bord local** en lecture seule (`./scripts/dashboard.sh` → http://127.0.0.1:8765/) : forme, plan, courses, séances, santé et glycémie déjà persistées. 127.0.0.1 uniquement, CSP stricte. Même identité visuelle que le tableau de bord d'origine (sapin / citron vert, Sora / Inter) ; seule ressource externe : les polices Google Fonts, désactivables par `[dashboard].web_fonts = false`. |
-| `arc_files_api.py` | API de fichiers (lecture / écriture validée, atomique, commitée) pour Claude mobile, exposée en MCP par `deploy/freebox/mcp_app.py`. |
+| `arc_files_api.py` | API de fichiers (lecture / écriture validée, atomique, commitée, annulable) : socle des outils MCP. |
+| `arc_mcp.py` · `arc_coach_server.py` | **Serveur MCP** (bibliothèque standard, ≈ 27 Mo) qui expose skills, outils déterministes, fichiers et ingestion à Claude mobile/distant ; un seul processus avec le site, sur deux ports. Testé avec le client MCP officiel. Voir `deploy/freebox/README.md`. |
 | `daily-sync.sh` | Synchronisation headless (cron). |
 
 Vocabulaire de charge **générique** : *charge*, *condition* (42 j), *fatigue* (7 j), *forme*. Jamais les

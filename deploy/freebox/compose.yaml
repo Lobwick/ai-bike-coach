@@ -1,47 +1,49 @@
-# Site + API MCP du coach sur la Freebox, derrière le Traefik existant (réseau externe `web`, certificats Let's Encrypt `leresolver`).
+# Site + API MCP du coach sur la Freebox : UN conteneur, UN processus (~27 Mo), derrière le Traefik existant
+# (réseau externe `web`, certificats Let's Encrypt `leresolver`).
 #   cd ~/ai-bike-coach/deploy/freebox && cp .env.example .env && (remplir .env, chmod 600) && sudo docker compose up -d --build
-# Aucun port n'est publié sur l'hôte : tout passe par Traefik. Aucun secret dans ce fichier : tout est dans .env (jamais versionné).
+# Aucun port publié sur l'hôte : tout passe par Traefik. Aucun secret ici : tout est dans .env (jamais versionné).
+# Deux ports internes pour deux niveaux d'authentification : 8000 = site (mot de passe Traefik), 8001 = MCP (jeton applicatif).
 name: ai-bike-coach
-
-x-data-volumes: &data-volumes
-  - ${DATA_DIR}:/data
-  - ${DATA_DIR}/activities:/app/activities
-  - ${DATA_DIR}/medical:/app/medical
-  - ${DATA_DIR}/nutrition:/app/nutrition
-  - ${DATA_DIR}/planning:/app/planning
-  - ${DATA_DIR}/rapports:/app/rapports
-  - ${DATA_DIR}/resources:/app/resources
-  - ${DATA_DIR}/config/workspace.user.toml:/app/config/workspace.user.toml:ro
 
 networks:
   web:
     external: true
 
 services:
-  coach-site:
+  coach:
     build: {context: ../.., dockerfile: deploy/freebox/Dockerfile}
     image: ai-bike-coach:latest
-    container_name: coach-site
+    container_name: coach
     restart: unless-stopped
     user: "${COACH_UID:-1000}:${COACH_GID:-1000}"
-    command: ["python3", "scripts/arc_serve.py", "--port", "8000"]
     environment:
       ARC_LISTEN: "0.0.0.0"
       ARC_ALLOWED_HOSTS: ${COACH_HOST}
-      ARC_PROXY_AUTH: "1"          # déclare : Traefik authentifie (basicAuth) devant ce site — sans cela il refuse de démarrer
-    volumes: *data-volumes
+      ARC_PROXY_AUTH: "1"          # déclare : le site est protégé par le basicAuth de Traefik — sans cela il refuse de démarrer
+      COACH_MCP_TOKEN: ${COACH_MCP_TOKEN}
+    volumes:
+      - ${DATA_DIR}:/data
+      - ${DATA_DIR}/activities:/app/activities
+      - ${DATA_DIR}/medical:/app/medical
+      - ${DATA_DIR}/nutrition:/app/nutrition
+      - ${DATA_DIR}/planning:/app/planning
+      - ${DATA_DIR}/rapports:/app/rapports
+      - ${DATA_DIR}/resources:/app/resources
+      - ${DATA_DIR}/config/workspace.user.toml:/app/config/workspace.user.toml:ro
     read_only: true
     tmpfs: ["/tmp"]
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    mem_limit: 192m
+    mem_limit: 96m
     networks: [web]
     labels:
       - traefik.enable=true
       - traefik.docker.network=web
+      # Site : https://<hôte>/coach/ — mot de passe (basicAuth), redirection /coach → /coach/, préfixe retiré.
       - traefik.http.routers.coach-site.rule=Host(`${COACH_HOST}`) && PathPrefix(`/coach`)
       - traefik.http.routers.coach-site.entrypoints=websecure
       - traefik.http.routers.coach-site.tls.certresolver=leresolver
+      - traefik.http.routers.coach-site.service=coach-site
       - traefik.http.routers.coach-site.middlewares=coach-slash,coach-auth,coach-strip
       - traefik.http.middlewares.coach-slash.redirectregex.regex=^(https?://[^/]+)/coach$$
       - traefik.http.middlewares.coach-slash.redirectregex.replacement=$${1}/coach/
@@ -50,33 +52,12 @@ services:
       - traefik.http.middlewares.coach-auth.basicauth.removeheader=true
       - traefik.http.middlewares.coach-strip.stripprefix.prefixes=/coach
       - traefik.http.services.coach-site.loadbalancer.server.port=8000
-
-  coach-mcp:
-    image: ai-bike-coach:latest
-    container_name: coach-mcp
-    restart: unless-stopped
-    depends_on: [coach-site]
-    user: "${COACH_UID:-1000}:${COACH_GID:-1000}"
-    command: ["sh", "-c", "git config --global --add safe.directory /data && exec uvicorn mcp_app:app --host 0.0.0.0 --port 8000"]
-    environment:
-      ARC_ROOT: /app
-      ARC_DATA_ROOT: /data
-      COACH_MCP_TOKEN: ${COACH_MCP_TOKEN}
-    volumes: *data-volumes
-    read_only: true
-    tmpfs: ["/tmp"]
-    cap_drop: [ALL]
-    security_opt: ["no-new-privileges:true"]
-    mem_limit: 256m
-    networks: [web]
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=web
-      # Même schéma que mcp-wearables : port 443 + sous-chemin (les connecteurs claude.ai n'acceptent pas toujours un port custom).
-      # URL du connecteur : https://${COACH_HOST}/mcp-coach/mcp   (en-tête X-Api-Key : le jeton). Pas de basicAuth ici : le jeton est exigé par l'application.
+      # MCP : https://<hôte>/mcp-coach/mcp — jeton exigé par l'application (en-tête X-Api-Key), même schéma que mcp-wearables.
+      # Pas de basicAuth ici ; ce routeur n'atteint QUE le port 8001, qui ne sert jamais le site.
       - traefik.http.routers.coach-mcp.rule=Host(`${COACH_HOST}`) && PathPrefix(`/mcp-coach`)
       - traefik.http.routers.coach-mcp.entrypoints=websecure
       - traefik.http.routers.coach-mcp.tls.certresolver=leresolver
+      - traefik.http.routers.coach-mcp.service=coach-mcp
       - traefik.http.routers.coach-mcp.middlewares=coach-mcp-strip
       - traefik.http.middlewares.coach-mcp-strip.stripprefix.prefixes=/mcp-coach
-      - traefik.http.services.coach-mcp.loadbalancer.server.port=8000
+      - traefik.http.services.coach-mcp.loadbalancer.server.port=8001

@@ -99,6 +99,20 @@ def _commit(droot, rel, message):
     return _git(droot, "rev-parse", "--short", "HEAD").stdout.strip()
 
 
+def commit_paths(droot, rels, message):
+    """Commite des fichiers DÉJÀ écrits par une synchro (chemins relatifs vérifiés contre la liste blanche)."""
+    if not _is_repo(droot):
+        return None
+    for rel in rels:
+        _resolve(droot, rel, write=True)
+        if os.path.exists(os.path.join(droot, rel)):
+            _git(droot, "add", "--", rel)
+    if _git(droot, "diff", "--cached", "--quiet", check=False).returncode == 0:
+        return None
+    _git(droot, "commit", "-q", "-m", f"{COMMIT_PREFIX} {message}"[:200])
+    return _git(droot, "rev-parse", "--short", "HEAD").stdout.strip()
+
+
 # ------------------------------------------------------------------ lecture
 
 def list_files(root, directory):

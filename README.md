@@ -33,9 +33,10 @@ Nightscout, ni Garmin, n'écrit rien. Seule requête externe : les polices Sora/
 
 ## Accès depuis le mobile (optionnel, Freebox / serveur perso)
 
-`deploy/freebox/` déploie derrière Traefik le **site** (mot de passe) et une **API MCP** (jeton) qui laissent Claude mobile lire et modifier
-le plan, le profil et les fichiers, avec validation du contrat, un commit git par écriture et un `undo`. Le site relit les fichiers
-à chaque chargement (rechargement automatique) : rien à reconstruire. Voir `deploy/freebox/README.md`.
+`deploy/freebox/` déploie derrière Traefik, dans **un seul processus de ≈ 27 Mo**, le **site** (mot de passe) et un **serveur MCP** (jeton)
+qui exposent à Claude mobile ou à tout client MCP : les **skills** du coach, les **outils déterministes** (charge, garde-fous, gabarits Garmin,
+glycémie, poids), et les **fichiers** (lecture/écriture validées, un commit git par écriture, `undo`). Le site relit les fichiers à chaque
+chargement (rechargement automatique) : rien à reconstruire. Voir `deploy/freebox/README.md`.
 
 ## Commandes
 
