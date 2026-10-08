@@ -498,6 +498,9 @@ select { font: inherit; color: var(--ink); background: var(--surface); border: 1
 
 .week { list-style: none; margin: 0.75rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.5rem; }
 .day { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0.65rem; display: flex; flex-direction: column; gap: 0.5rem; min-height: 9rem; }
+.week--upcoming { grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); }
+.week--upcoming .day { min-height: 0; }
+.subhead { margin: 1rem 0 0; font: 700 0.9rem/1 var(--display); color: var(--ink-faint); }
 .day--today { border-color: var(--lime-strong); box-shadow: 0 0 0 1px var(--lime-strong) inset, var(--shadow); }
 .day__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.4rem; }
 .day__name { font: 700 0.95rem/1 var(--display); text-transform: capitalize; }
