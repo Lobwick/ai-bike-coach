@@ -93,7 +93,6 @@ async function viewToday() {
     : h`<p class="muted">Rien de planifié aujourd'hui.</p>`;
   const next = t.upcoming.length
     ? h`<section class="band"><h2>À venir</h2><ul class="week week--upcoming">${t.upcoming.map((x) => h`<li class="day"><div class="day__head"><span class="day__name">${F.weekday(x.date)}</span><span class="day__date">${F.dayShort(x.date)}</span></div><div class="session"><span class="session__title">${x.title}</span><span class="session__meta">${F.duration(x.duration_s)}${x.planned_load != null ? ` · ≈ ${Math.round(x.planned_load)}` : ""}</span>${x.race ? chip("verdict-amber", "Course") : x.fixed ? chip("status-planned", "Club imposée") : ""}</div></li>`)}</ul></section>` : "";
-    ? h`<p class="note">À venir : ${t.upcoming.map((x) => `${F.weekday(x.date)} ${F.dayShort(x.date)} — ${x.title}`).join(" · ")}</p>` : "";
 
   const L = t.load, st = L.state;
   const form = L.reliable && st

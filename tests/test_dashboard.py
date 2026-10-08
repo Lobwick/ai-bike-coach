@@ -178,3 +178,19 @@ class TestHttp(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestJsSyntax(unittest.TestCase):
+    """Un JS invalide = site blanc : on le détecte avant le déploiement (nécessite node)."""
+
+    @unittest.skipUnless(__import__("shutil").which("node"), "node absent")
+    def test_web_modules_parse(self):
+        import shutil, subprocess, tempfile
+        from pathlib import Path
+        root = Path(__file__).resolve().parent.parent / "web" / "js"
+        for f in sorted(root.glob("*.js")):
+            with tempfile.TemporaryDirectory() as d:
+                m = Path(d) / (f.stem + ".mjs")
+                shutil.copy(f, m)
+                r = subprocess.run(["node", "--check", str(m)], capture_output=True, text=True)
+                self.assertEqual(r.returncode, 0, f"{f.name}: {r.stderr}")
